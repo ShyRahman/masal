@@ -96,7 +96,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   var CONF = [['got', 'Got it'], ['wobbly', 'Wobbly'], ['lost', 'Lost'], ['notyet', 'Not done yet']];
   var SURE = [[3, 'Pretty sure'], [2, 'Not sure'], [1, 'Guessing']];
   var S = { dbAnswers: {}, dbConf: {}, dbProfile: {}, dbReviews: {}, local: { a: {}, c: {}, p: {} }, mem: { a: {}, c: {}, p: {} },
-            db: null, ready: false, web: false, sent: {}, sendFailed: false, endSent: false, dirty: false, lastSend: 0, isOwner: false, canEdit: false, canWrite: null, preview: false, writeFailed: false, qi: {}, queue: {}, started: 0, importMsg: '' };
+            db: null, ready: false, web: false, sent: {}, sendFailed: false, endSent: {}, dirty: false, lastSend: 0, isOwner: false, canEdit: false, canWrite: null, preview: false, writeFailed: false, qi: {}, queue: {}, started: 0, importMsg: '' };
   var chain = Promise.resolve();
 
   /* ---------- small helpers ---------- */
@@ -104,8 +104,8 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   function M(s) { return String(s).replace(/\^\{([^{}]*)\}/g, '<sup>$1</sup>').replace(/\{([^{}]*?)\/\/([^{}]*?)\}/g, '<span class="fr"><span>$1</span><span>$2</span></span>'); }
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
-  var ALLR = [QUICK];
-  function allQs() { return QUICK.qs.map(function (q) { return { r: QUICK, q: q }; }); }
+  var ALLR = [QUICK, CHECK2];
+  function allQs() { var o = []; [QUICK, CHECK2].forEach(function (c) { c.qs.forEach(function (q) { o.push({ r: c, q: q }); }); }); return o; }
   function topicOf(id) { return TOPICS.filter(function (t) { return t.id === id; })[0]; }
   function when(iso) { try { return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
   function merge(a, b, c) { return Object.assign({}, a, b, c); }
@@ -154,7 +154,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
     }).then(function (r) {
       if (!r.ok) throw new Error('send failed');
       S.sent[kind] = when; S.sendFailed = false; var e2 = $('#sendStatus'); if (e2) e2.textContent = 'Sent to your parent ✓';
-    }).catch(function () { S.sendFailed = true; S.dirty = true; if (route() === 'round-q') render(); });
+    }).catch(function () { S.sendFailed = true; S.dirty = true; if (route().indexOf('round-') === 0) render(); });
   }
   function codeFor() {
     var j = JSON.stringify({ v: 1, a: myA(), c: myC(), p: myP() });
@@ -178,9 +178,10 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
 
   function render() {
     var r = route(); app.className = r === 'parent' ? 'wide' : '';
-    if (r === 'confidence') return viewConfidence();
+    if (r === 'confidence') return viewConfidence(false);
+    if (r === 'confidence2') return viewConfidence(true);
     if (r === 'parent') return viewParent();
-    var m = r.match(/^round-([a-eq])$/);
+    var m = r.match(/^round-(q2|[a-eq])$/);
     if (m) return viewRound(m[1]);
     if (r === 'maths') return viewMaths();
     viewHub();
@@ -196,10 +197,11 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   }
   /* ---------- subject picker ---------- */
   function viewHub() {
-    var C = myC(), qp = roundProgress(QUICK), coreN = TOPICS.filter(function (t) { return t.core; }).length, coreRated = TOPICS.filter(function (t) { return t.core && C[t.id]; }).length;
-    var done = qp.done === qp.total && coreRated === coreN, started = qp.done || coreRated;
+    var C = myC(), qp = roundProgress(QUICK), q2 = roundProgress(CHECK2), coreN = TOPICS.filter(function (t) { return t.core; }).length, coreRated = TOPICS.filter(function (t) { return t.core && C[t.id]; }).length;
+    var core2N = TOPICS.filter(function (t) { return t.core2; }).length, core2Rated = TOPICS.filter(function (t) { return t.core2 && C[t.id]; }).length;
+    var part1 = qp.done === qp.total && coreRated === coreN, done = part1 && q2.done === q2.total && core2Rated === core2N, started = qp.done || coreRated || q2.done || core2Rated;
     app.innerHTML = '<h1>Masal\'s study space</h1><div class="card"><p><b>Hi Masal.</b> Pick a subject to get started.</p></div>' +
-      '<div class="steps"><a class="step" href="#maths"><span><b>Maths</b><span class="muted small">' + (done ? 'Check-in finished' : started ? 'Check-in in progress' : 'Start with a short check-in, about 20 minutes') + '</span></span><span class="tick">' + (done ? 'Done ✓' : '') + '</span></a>' +
+      '<div class="steps"><a class="step" href="#maths"><span><b>Maths</b><span class="muted small">' + (done ? 'Both check-ins finished' : part1 ? 'Part 1 done. Part 2 is next' : started ? 'Check-in in progress' : 'Start with a short check-in, about 20 minutes') + '</span></span><span class="tick">' + (done ? 'Done ✓' : '') + '</span></a>' +
       '<div class="step" aria-disabled="true" style="opacity:.6"><span><b>Science</b><span class="muted small">Coming soon</span></span></div></div>';
   }
 
@@ -207,12 +209,14 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
     var A = myA(), C = myC(), conf = Object.keys(C).length;
     var h = '<a class="muted" href="#home">← All subjects</a><h1>Maths check-in</h1>' +
       '<div class="card"><p><b>Hi Masal.</b> This is not a test and nothing is graded. It helps us find out what is solid, what is wobbly, and where to spend time so maths stops feeling like a fog.</p>' +
-      '<p>Two short parts, about 20 minutes in all. Use paper for working. <b>Leaving a question blank or tapping "I don\'t know yet" is a good answer</b>: it tells us exactly what to teach.</p>' +
+      '<p>Part 1 takes about 20 minutes. Part 2 covers the rest of maths and takes about 20 minutes too, and you can do it on another day. Use paper for working. <b>Leaving a question blank or tapping "I don\'t know yet" is a good answer</b>: it tells us exactly what to teach.</p>' +
       '<p class="small muted">Your answers are saved so your parent can look at them with you.</p></div>' + savingBanner();
     var coreN = TOPICS.filter(function (t) { return t.core; }).length, coreRated = TOPICS.filter(function (t) { return t.core && C[t.id]; }).length;
-    var qp = roundProgress(QUICK);
-    h += '<div class="steps"><a class="step" href="#confidence"><span><b>1. How do you feel about each topic?</b><span class="muted small">About 3 minutes. Just tap.</span></span><span class="tick">' + (coreRated === coreN ? 'Done ✓' : coreRated ? coreRated + '/' + coreN : '') + '</span></a>' +
+    var qp = roundProgress(QUICK), q2 = roundProgress(CHECK2), core2N = TOPICS.filter(function (t) { return t.core2; }).length, core2Rated = TOPICS.filter(function (t) { return t.core2 && C[t.id]; }).length;
+    h += '<h3>Part 1</h3><div class="steps"><a class="step" href="#confidence"><span><b>1. How do you feel about each topic?</b><span class="muted small">About 3 minutes. Just tap.</span></span><span class="tick">' + (coreRated === coreN ? 'Done ✓' : coreRated ? coreRated + '/' + coreN : '') + '</span></a>' +
       '<a class="step" href="#round-q"><span><b>2. ' + QUICK.qs.length + ' questions</b><span class="muted small">About ' + QUICK.mins + ' minutes' + (qp.done && qp.done < qp.total ? ' (' + qp.done + ' of ' + qp.total + ' done)' : '') + '</span></span><span class="tick">' + (qp.done === qp.total ? 'Done ✓' : '') + '</span></a></div>' +
+      '<h3 style="margin-top:6px">Part 2: the rest of maths</h3><div class="steps"><a class="step" href="#confidence2"><span><b>3. A few more topics</b><span class="muted small">About 2 minutes. Just tap.</span></span><span class="tick">' + (core2Rated === core2N ? 'Done ✓' : core2Rated ? core2Rated + '/' + core2N : '') + '</span></a>' +
+      '<a class="step" href="#round-q2"><span><b>4. ' + CHECK2.qs.length + ' more questions</b><span class="muted small">About ' + CHECK2.mins + ' minutes' + (q2.done && q2.done < q2.total ? ' (' + q2.done + ' of ' + q2.total + ' done)' : '') + '</span></span><span class="tick">' + (q2.done === q2.total ? 'Done ✓' : '') + '</span></a></div>' +
       '<div class="row">' + (needSend() ? '<button class="btn quiet" id="sendCode">Send my results</button>' : '') + ((S.isOwner || S.canEdit) ? '<a class="btn" href="#parent">Parent view</a>' : '') + '</div><div id="codeBox"></div>';
     app.innerHTML = h;
     wireCommon();
@@ -232,18 +236,18 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   }
 
   /* ---------- confidence ---------- */
-  function viewConfidence() {
-    var C = myC(), P = myP(), h = '<a class="muted" href="#maths">← Back</a><h2>How do you feel about each topic?</h2>' +
+  function viewConfidence(second) {
+    var C = myC(), P = myP(), h = '<a class="muted" href="#maths">← Back</a><h2>' + (second ? 'A few more topics' : 'How do you feel about each topic?') + '</h2>' +
       '<div class="card"><p class="small muted"><b>Got it</b> = I can usually do it. <b>Wobbly</b> = sometimes right, sometimes not. <b>Lost</b> = I do not get it. <b>Not done yet</b> = we have not done it at school. Be honest, there are no wrong answers.</p>';
     function topicRow(t) {
       var cur = C[t.id] && C[t.id].level;
       return '<div class="topic" data-t="' + t.id + '"><div>' + esc(t.label) + '</div><div class="opts">' + CONF.map(function (c) {
         return '<button class="chip c-' + c[0] + '" data-l="' + c[0] + '" aria-pressed="' + (cur === c[0]) + '">' + c[1] + '</button>'; }).join('') + '</div></div>';
     }
-    h += TOPICS.filter(function (t) { return t.core; }).map(topicRow).join('');
-    h += '</div><div class="card"><label class="f" for="hardest">The maths thing that bugs me most is…</label><textarea id="hardest" placeholder="In your own words. Anything at all.">' + esc(P.hardest || '') + '</textarea>' +
+    h += TOPICS.filter(function (t) { return second ? t.core2 : t.core; }).map(topicRow).join('');
+    h += '</div>' + (second ? '' : '<div class="card"><label class="f" for="hardest">The maths thing that bugs me most is…</label><textarea id="hardest" placeholder="In your own words. Anything at all.">' + esc(P.hardest || '') + '</textarea>' +
       '<div class="f" style="margin-top:6px">Right now, maths feels…</div><div class="scale">' + [[1, 'Awful'], [2, 'Hard'], [3, 'OK'], [4, 'Fine'], [5, 'Good']].map(function (s) {
-        return '<button class="chip" data-f="' + s[0] + '" aria-pressed="' + (P.feeling === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div></div>' +
+        return '<button class="chip" data-f="' + s[0] + '" aria-pressed="' + (P.feeling === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div></div>') +
       '<a class="btn primary" href="#maths" id="confDone">Done</a>';
     app.innerHTML = h;
     $$('.topic .chip').forEach(function (b) { b.onclick = function () {
@@ -252,8 +256,8 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
       $$('.chip', b.parentNode).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
     }; });
     function saveProfile(patch) { persist('profile', 'main', Object.assign({}, myP(), patch, { at: new Date().toISOString() }), 'p'); }
-    $('#confDone').onclick = function () { autoSend('topics'); };
-    $('#hardest').onchange = function () { saveProfile({ hardest: this.value.slice(0, 1000) }); };
+    $('#confDone').onclick = function () { autoSend(second ? 'topics2' : 'topics'); };
+    if ($('#hardest')) $('#hardest').onchange = function () { saveProfile({ hardest: this.value.slice(0, 1000) }); };
     $$('[data-f]').forEach(function (b) { b.onclick = function () {
       saveProfile({ feeling: +b.getAttribute('data-f') });
       $$('[data-f]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
@@ -331,7 +335,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
       (good.length ? '<p><b>Looking good:</b> ' + good.map(esc).join(', ') + '.</p>' : '') + '<p class="muted small">Nothing is marked for you here. Your parent will go through it with you, and you will get the real picture together.</p></div>' + savingBanner() + '<p class="small muted" id="sendStatus">' + (S.web && needSend() ? 'Could not send automatically. Tap Send my results and paste the code to your parent.' : S.sent.finish ? 'Sent to your parent ✓' : '') + '</p>' +
       '<div class="row"><a class="btn primary" href="#home">Back to subjects</a>' + (needSend() ? '<button class="btn quiet" id="sendCode">Send my results</button>' : '') + '</div><div id="codeBox"></div>';
     app.innerHTML = h; wireCommon();
-    if (S.web && !S.endSent) { S.endSent = true; autoSend('finish'); }
+    if (S.web && !S.endSent[r.id]) { S.endSent[r.id] = true; autoSend(r.id === 'q2' ? 'finish2' : 'finish'); }
   }
 
   /* ---------- parent view ---------- */

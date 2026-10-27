@@ -124,7 +124,7 @@ if res:
     check('owner: no JS error', 'error' not in res)
     check('owner: home has Parent view link', 'Parent view' in res['home'])
     check('owner: parent view renders', res.get('h1', '').startswith('Masal'))
-    check('owner: tile counts 5 answers of 16 parts', '5 / 16' in t)
+    check('owner: tile counts 5 answers of 35 parts (both checks)', '5 / 35' in t)
     check('owner: only the 12 core topics are listed', t.count('not rated') + t.count('Got it') + t.count('Wobbly') + t.count('Lost') >= 8 and 'Angles in polygons' not in t)
     check('owner: flags "says confident, got some wrong"', 'Says confident, got some wrong' in t)
     check('owner: flags "better than she thinks"', 'Better than she thinks' in t)

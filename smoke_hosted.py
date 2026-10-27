@@ -73,6 +73,27 @@ check('leaving the page with unsent answers files one progress update (keepalive
 bad = run('bad', configured, "function(u,x){window.__posts.push({b:x.body});return Promise.reject(new Error('offline'))}", FLOW)
 check('failure: no JS error; she is told and gets the fallback button', 'error' not in bad and 'Could not send automatically' in bad['end'] and 'Send my results' in bad['end'])
 check('failure: finish is not re-sent in a loop', len([p for p in bad['posts'] if '(finish)' in p['b']]) == 1)
+FLOW2 = """
+await w(500); location.hash = '#maths'; await w(150); o.maths = document.body.innerText;
+location.hash = '#confidence2'; await w(150); o.rows2 = document.querySelectorAll('.topic').length; o.hasHardest = !!document.querySelector('#hardest');
+document.querySelector('.topic[data-t="pythag"] .chip[data-l="lost"]').click(); document.getElementById('confDone').click(); await w(300);
+location.hash = '#round-q2'; await w(150); o.header = document.querySelector('.row.spread .muted.small').textContent;
+document.querySelector('#in-q40a').value = '84'; document.querySelector('[data-s="3"]').click(); document.querySelector('#next').click(); await w(100);
+for (var i = 0; i < 11; i++) { document.querySelector('#skip').click(); await w(40); }
+await w(600); o.end = document.body.innerText;
+"""
+two = run('two', configured, STUB_OK, FLOW2)
+check('part 2: home lists both parts (4 steps) and nothing optional', 'error' not in two and 'Part 1' in two['maths'] and 'Part 2' in two['maths'] and '3. A few more topics' in two['maths'] and '4. 12 more questions' in two['maths'] and 'optional' not in two['maths'].lower())
+check('part 2: seven extra topics to rate, no "hardest" box', two['rows2'] == 7 and two['hasHardest'] is False)
+check('part 2: questions page says Second check, question 1 of 12', 'Second check' in two['header'] and 'question 1 of 12' in two['header'])
+p2 = two['posts']
+check('part 2: topics2 once, a checkpoint at questions 4 and 8, finish2 exactly once, no part-1 finish', sum('(topics2)' in p['b'] for p in p2) == 1 and sum('(progress)' in p['b'] for p in p2) == 2 and sum('(finish2)' in p['b'] for p in p2) == 1 and sum('(finish)' in p['b'] for p in p2) == 0)
+f2 = [json.loads(p['b']) for p in p2 if '(finish2)' in p['b']]
+if f2:
+    d2 = subprocess.run(['node', os.path.join(here, 'inbox_decrypt.js'), privpath], input=f2[0]['body'], capture_output=True, text=True)
+    pl = json.loads(d2.stdout) if d2.returncode == 0 else {}
+    check('part 2 round trip: 12 questions, q40a right, pythag rated lost', len({v['q'] for v in pl.get('a', {}).values()}) == 12 and pl['a']['q40a']['st'] == 'right' and pl['c']['pythag']['level'] == 'lost')
+check('part 2: finish screen offered', 'All done' in two['end'])
 unconf = run('unconf', base, STUB_OK, FLOW)   # real public key, but no token in the build
 check('token not configured: nothing is sent and the paste-a-code fallback is offered', 'error' not in unconf and not unconf['posts'] and 'Send my results' in unconf['end'])
 check('the committed/built page has no real token in it unless the build was given one', 'github_pat_' not in base and 'ghp_' not in base)

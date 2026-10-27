@@ -9,7 +9,7 @@ var TOPICS = [
   { id: 'percent', core: true, strand: 'Number', label: 'Percentages' },
   { id: 'ratio', core: true, strand: 'Number', label: 'Ratio and sharing' },
   { id: 'primes', strand: 'Number', label: 'Prime factors, HCF and LCM' },
-  { id: 'fdp', strand: 'Number', label: 'Fractions, decimals and percentages' },
+  { id: 'fdp', core2: true, strand: 'Number', label: 'Fractions, decimals and percentages' },
   { id: 'collect', strand: 'Algebra', label: 'Collecting like terms' },
   { id: 'expand1', core: true, strand: 'Algebra', label: 'Expanding brackets' },
   { id: 'expand2', core: true, strand: 'Algebra', label: 'Expanding two brackets' },
@@ -21,13 +21,13 @@ var TOPICS = [
   { id: 'indices', strand: 'Indices', label: 'Index laws' },
   { id: 'negfrac', strand: 'Indices', label: 'Negative and fractional indices' },
   { id: 'stdform', core: true, strand: 'Indices', label: 'Standard form' },
-  { id: 'angles', strand: 'Shape and measures', label: 'Angles in polygons' },
-  { id: 'circles', strand: 'Shape and measures', label: 'Circles: area and circumference' },
-  { id: 'pythag', strand: 'Shape and measures', label: 'Pythagoras' },
-  { id: 'units', strand: 'Shape and measures', label: 'Units, area conversions and speed' },
-  { id: 'averages', strand: 'Data and money', label: 'Mean, median and range' },
+  { id: 'angles', core2: true, strand: 'Shape and measures', label: 'Angles in polygons' },
+  { id: 'circles', core2: true, strand: 'Shape and measures', label: 'Circles: area and circumference' },
+  { id: 'pythag', core2: true, strand: 'Shape and measures', label: 'Pythagoras' },
+  { id: 'units', core2: true, strand: 'Shape and measures', label: 'Units, area conversions and speed' },
+  { id: 'averages', core2: true, strand: 'Data and money', label: 'Mean, median and range' },
   { id: 'prob', core: true, strand: 'Data and money', label: 'Probability' },
-  { id: 'money', strand: 'Data and money', label: 'Money: interest, currency, best buys' }
+  { id: 'money', core2: true, strand: 'Data and money', label: 'Money: interest, currency, best buys' }
 ];
 
 var ROUNDS = [
@@ -94,6 +94,13 @@ var ROUNDS = [
     { id: 'q35', topic: 'money', calc: true, stem: '£500 is invested at 4% compound interest per year. Find the total after 2 years. <span class="calc">Calculator allowed.</span>', parts: [{ id: 'a', label: '£', kind: 'num', exp: 540.8 }] },
     { id: 'q36', topic: 'money', calc: true, stem: '£1 = €1.16. Change €87 into pounds. <span class="calc">Calculator allowed.</span>', parts: [{ id: 'a', label: '£', kind: 'num', exp: 75 }] },
     { id: 'q37', topic: 'money', stem: 'Which is the better buy: <b>3 litres for £2.40</b> or <b>5 litres for £3.75</b>?', parts: [{ id: 'a', kind: 'mc', options: ['3 litres for £2.40', '5 litres for £3.75'], correct: 1 }] }
+  ] },
+  { id: 'x', title: 'Extra', sub: 'Questions added for the second check', mins: 5, qs: [
+    { id: 'q38', topic: 'ratio', stem: 'Share £150 in the ratio 2 : 3.', parts: [
+      { id: 'a', label: 'the smaller share (£)', kind: 'num', exp: 60 }, { id: 'b', label: 'the larger share (£)', kind: 'num', exp: 90 }] },
+    { id: 'q39', topic: 'prob', stem: 'A bag has 4 red and 6 blue counters.<br>a) Find P(blue).<br>b) A counter is taken out, put back, and a second is taken out. Find P(both red).', parts: [
+      { id: 'a', label: 'a)', kind: 'num', exp: 0.6, hint: 'a fraction like 1/3 or a decimal' }, { id: 'b', label: 'b)', kind: 'num', exp: 0.16 }] },
+    { id: 'q40', topic: 'percent', stem: 'Find 35% of £240. <span class="calc">No calculator.</span>', parts: [{ id: 'a', label: '£', kind: 'num', exp: 84 }] }
   ] }
 ];
 
@@ -102,4 +109,9 @@ var QUICK = { id: 'q', title: 'Quick start', sub: 'Her answers', mins: 15,
   ids: ['q01', 'q03', 'q05', 'q07', 'q09', 'q13', 'q15', 'q16', 'q18', 'q21', 'q27', 'q34'] };
 QUICK.qs = QUICK.ids.map(function (id) { var f; ROUNDS.forEach(function (r) { r.qs.forEach(function (x) { if (x.id === id) f = x; }); }); return f; });
 
-if (typeof module !== 'undefined') module.exports = { TOPICS: TOPICS, ROUNDS: ROUNDS, QUICK: QUICK };
+// Second check: the areas the first one and the exercise books do not cover (percentages, ratio, probability, data, shape, measures, money).
+var CHECK2 = { id: 'q2', title: 'Second check', sub: 'The rest of maths', mins: 20,
+  ids: ['q40', 'q08', 'q38', 'q11', 'q39', 'q33', 'q28', 'q30', 'q32', 'q29', 'q35', 'q37'] };
+CHECK2.qs = CHECK2.ids.map(function (id) { var f; ROUNDS.forEach(function (r) { r.qs.forEach(function (x) { if (x.id === id) f = x; }); }); return f; });
+
+if (typeof module !== 'undefined') module.exports = { TOPICS: TOPICS, ROUNDS: ROUNDS, QUICK: QUICK, CHECK2: CHECK2 };

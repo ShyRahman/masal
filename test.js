@@ -43,6 +43,10 @@ ok('q33','a',['6']); ok('q33','b',['5']); ok('q33','c',['7']);
 ok('q34','a',['1/5','0.2','20%']); ok('q34','b',['1/4','0.25','25%']); no('q34','b',['1/2','5/10','0.5'])
 ok('q35','a',['540.80','£540.80','540.8']); no('q35','a',['540'],'check'); no('q35','a',['520','500'],'wrong');
 ok('q36','a',['75']); t('q37', M.markPart(part('q37','a'), 1), 'right');
+ok('q38','a',['60','£60']); ok('q38','b',['90']); no('q38','a',['50','30'])
+ok('q39','a',['3/5','0.6','60%']); no('q39','a',['2/5','6/4']); ok('q39','b',['4/25','0.16','16%']); no('q39','b',['2/5','0.4','4/10'])
+ok('q40','a',['84','£84']); no('q40','a',['8.4','35'])
+const CHECK2 = require('./questions.js').CHECK2; t('check 2 has 12 questions, none repeating the first check', CHECK2.qs.length === 12 && !CHECK2.qs.some(q => require('./questions.js').QUICK.ids.includes(q.id)), true);
 t('blank is skip', M.markPart(part('q01','a'), '  '), 'skip');
 // every numeric/alg question has at least one expected value and no duplicated ids
 const ids = new Set(); ROUNDS.forEach(r => r.qs.forEach(q => { if (ids.has(q.id)) { fail++; console.log('dup', q.id); } ids.add(q.id); q.parts.forEach(p => { if (p.kind==='num'&&typeof p.exp!=='number') {fail++;console.log('bad exp',q.id,p.id);} }); }));
