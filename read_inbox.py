@@ -14,7 +14,8 @@ for i in issues:
     log.append((d['when'], d['kind'])); A.update(d.get('a', {})); C.update(d.get('c', {})); P.update(d.get('p', {}).get('main', d.get('p', {})))
 if '--raw' in sys.argv: print(json.dumps({'a': A, 'c': C, 'p': P}, indent=1)); sys.exit()
 SURE = {3: 'pretty sure', 2: 'not sure', 1: 'guessing', 0: "don't know"}
-print(f'{len(log)} submissions' + (f', latest {max(w for w, _ in log)}' if log else '') + f'; {len(A)} answers, {len(C)} topics rated')
+kinds = {k: sum(1 for _, x in log if x == k) for k in ('topics', 'progress', 'finish')}
+print(f'{len(log)} submissions (' + ', '.join(f'{n} {k}' for k, n in kinds.items() if n) + ')' + (f', latest {max(w for w, _ in log)}' if log else '') + f'; {len(A)} answers, {len(C)} topics rated' + ('; FINISHED' if kinds['finish'] else '; not finished yet' if log else ''))
 if P: print('Feeling:', P.get('feeling'), '| Hardest:', P.get('hardest'))
 def exp(p):
     k = p['kind']

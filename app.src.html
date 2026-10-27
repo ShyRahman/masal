@@ -95,7 +95,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   var CONF = [['got', 'Got it'], ['wobbly', 'Wobbly'], ['lost', 'Lost'], ['notyet', 'Not done yet']];
   var SURE = [[3, 'Pretty sure'], [2, 'Not sure'], [1, 'Guessing']];
   var S = { dbAnswers: {}, dbConf: {}, dbProfile: {}, dbReviews: {}, local: { a: {}, c: {}, p: {} }, mem: { a: {}, c: {}, p: {} },
-            db: null, ready: false, web: false, sent: {}, sendFailed: false, endSent: false, isOwner: false, canEdit: false, canWrite: null, preview: false, writeFailed: false, qi: {}, queue: {}, started: 0, importMsg: '' };
+            db: null, ready: false, web: false, sent: {}, sendFailed: false, endSent: false, dirty: false, lastSend: 0, isOwner: false, canEdit: false, canWrite: null, preview: false, writeFailed: false, qi: {}, queue: {}, started: 0, importMsg: '' };
   var chain = Promise.resolve();
 
   /* ---------- small helpers ---------- */
@@ -119,6 +119,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   function persist(coll, id, data, memKey) {
     S.mem[memKey][id] = data;
     if (S.preview) return;
+    S.dirty = true;   // something new to send (hosted copy)
     saveLocal();
     if (!S.db || S.canWrite === false || S.writeFailed) return;
     chain = chain.then(function () { return S.db.collection(coll).doc(id).set(data); }).catch(function (e) {
@@ -142,16 +143,17 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   }
   function autoSend(kind) {
     if (!inboxReady()) { S.sendFailed = true; return; }
+    S.lastSend = Date.now(); S.dirty = false;   // anything she changes while this is in flight sets it again
     var el = $('#sendStatus'); if (el) el.textContent = 'Sending to your parent…';
     var when = new Date().toISOString();
     encryptForParent(JSON.stringify({ subject: 'maths', kind: kind, when: when, a: myA(), c: myC(), p: myP() })).then(function (blob) {
-      return fetch('https://api.github.com/repos/' + INBOX.repo + '/issues', { method: 'POST',
+      return fetch('https://api.github.com/repos/' + INBOX.repo + '/issues', { method: 'POST', keepalive: true,
         headers: { 'Authorization': 'Bearer ' + INBOX.token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'Results (' + kind + ') ' + when.slice(0, 16).replace('T', ' '), body: blob }) });
     }).then(function (r) {
       if (!r.ok) throw new Error('send failed');
       S.sent[kind] = when; S.sendFailed = false; var e2 = $('#sendStatus'); if (e2) e2.textContent = 'Sent to your parent ✓';
-    }).catch(function () { S.sendFailed = true; if (route() === 'round-q') render(); });
+    }).catch(function () { S.sendFailed = true; S.dirty = true; if (route() === 'round-q') render(); });
   }
   function codeFor() {
     var j = JSON.stringify({ v: 1, a: myA(), c: myC(), p: myP() });
@@ -295,8 +297,13 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
         persist('answers', q.id + p.id, { r: rid, q: q.id, p: p.id, topic: q.topic, raw: raw, st: markPart(p, raw), sure: skipAll || !String(raw).trim() ? 0 : sure, skipped: !!skipAll, secs: secs, at: now }, 'a');
       });
     }
-    $('#next').onclick = function () { collect(false); S.qi[rid] = i2 + 1; render(); window.scrollTo(0, 0); };
-    $('#skip').onclick = function () { collect(true); S.qi[rid] = i2 + 1; render(); window.scrollTo(0, 0); };
+    function advance(skipAll) {
+      collect(skipAll); S.qi[rid] = i2 + 1;
+      if (S.web && (i2 + 1) % 4 === 0 && i2 + 1 < queue.length) autoSend('progress');   // a checkpoint every 4 questions; the last send is the finish
+      render(); window.scrollTo(0, 0);
+    }
+    $('#next').onclick = function () { advance(false); };
+    $('#skip').onclick = function () { advance(true); };
     $('#back').onclick = function () { S.qi[rid] = Math.max(0, i2 - 1); render(); window.scrollTo(0, 0); };
   }
   function partHtml(q, p, rec) {
@@ -411,6 +418,10 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
       softRender();
     }, function () { /* a dead listener: the page keeps working from local state */ });
   }
+  // Leaving the page (switching app or tab) with unsent answers: file a progress update so a half-done sitting is not lost.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden' && S.web && S.dirty && Date.now() - S.lastSend > 15000) autoSend('progress');
+  });
   function start() {
     loadLocal(); render();
     var cl = window.claude;

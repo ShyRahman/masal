@@ -47,7 +47,7 @@ check('hosted: opens on the subject picker', "Masal's study space" in ok['hub'] 
 check('hosted: no "not connected" banner and no Send button while sending works', 'not connected' not in ok['home'] and 'Send my results' not in ok['home'])
 posts = ok.get('posts', [])
 check('hosted: sends go to the inbox repo issues API with the bearer token', len(posts) >= 2 and all(p['u'] == 'https://api.github.com/repos/test/inbox/issues' and p['h'].get('Authorization') == 'Bearer test-token-123' for p in posts))
-check('hosted: topics sent on Done, finish sent exactly once', sum('(topics)' in p['b'] for p in posts) == 1 and sum('(finish)' in p['b'] for p in posts) == 1)
+check('hosted: topics once, a progress checkpoint after questions 4 and 8, finish exactly once', sum('(topics)' in p['b'] for p in posts) == 1 and sum('(progress)' in p['b'] for p in posts) == 2 and sum('(finish)' in p['b'] for p in posts) == 1)
 check('hosted: the token and the answers never appear in plain text in what is sent', all('168' not in p['b'] and 'two brackets' not in p['b'] and 'wobbly' not in p['b'] for p in posts))
 fin = [json.loads(p['b']) for p in posts if '(finish)' in p['b']]
 if fin:
@@ -59,6 +59,17 @@ if fin:
     other = subprocess.run(['node', os.path.join(here, 'inbox_decrypt.js'), os.path.expanduser('~/.maths-inbox/private.pem')], input=blob, capture_output=True, text=True)
     check('a different private key cannot decrypt it', other.returncode != 0)
 check('hosted: she is told it was sent', 'Sent to your parent' in ok['end'])
+VIS = """
+await w(500); location.hash = '#round-q'; await w(150);
+document.querySelector('#in-q01a').value = '168'; document.querySelector('#next').click(); await w(100);
+o.before = window.__posts.length;
+Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true }); document.dispatchEvent(new Event('visibilitychange')); await w(400);
+o.afterHide = window.__posts.length;
+document.dispatchEvent(new Event('visibilitychange')); await w(300);   // nothing new since: no duplicate
+o.afterAgain = window.__posts.length;
+"""
+vis = run('vis', configured, STUB_OK, VIS)
+check('leaving the page with unsent answers files one progress update (keepalive), and not twice', 'error' not in vis and vis['before'] == 0 and vis['afterHide'] == 1 and vis['afterAgain'] == 1 and '(progress)' in vis['posts'][0]['b'])
 bad = run('bad', configured, "function(u,x){window.__posts.push({b:x.body});return Promise.reject(new Error('offline'))}", FLOW)
 check('failure: no JS error; she is told and gets the fallback button', 'error' not in bad and 'Could not send automatically' in bad['end'] and 'Send my results' in bad['end'])
 check('failure: finish is not re-sent in a loop', len([p for p in bad['posts'] if '(finish)' in p['b']]) == 1)
