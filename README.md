@@ -1,6 +1,6 @@
-# Maths check-in
+# Masal's study space
 
-A phone-friendly maths baseline: rate 12 topics, then answer 12 questions. Plain HTML/JS, no framework, hosted on GitHub Pages.
+A phone-friendly study site. The main page is a subject picker (Maths now, Science later); Maths starts with a short check-in: rate 12 topics, then answer 12 questions. Plain HTML/JS, no framework, hosted on GitHub Pages at https://shyrahman.github.io/masal/. To add a subject: add a tile in `viewHub()` and a `viewX()` route in `app.src.html`.
 
 ## How results travel
 1. She fills in the page. Her answers stay in her browser while she works.

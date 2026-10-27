@@ -40,7 +40,8 @@ def check(label, cond):
 # Masal on a phone where saving works: 12 topics, then the 12 questions
 CHILD = """
 await wait(400);
-out.homeText = document.body.innerText;
+out.hubText = document.body.innerText; out.hubLinks = [].slice.call(document.querySelectorAll('a.step')).map(function(a){return a.getAttribute('href')});
+location.hash = '#maths'; await wait(150); out.homeText = document.body.innerText;
 location.hash = '#confidence'; await wait(150);
 out.topicRows = document.querySelectorAll('.topic').length;
 document.querySelector('.topic[data-t="fractions"] .chip[data-l="wobbly"]').click();
@@ -64,6 +65,7 @@ out.store = window.__store;
 res = run('child', {}, {'owner': False, 'write': True, 'db': True}, CHILD)
 if res:
     check('child: no JS error', 'error' not in res)
+    check('child: first page is a subject picker: Maths links through, Science is coming soon', "Masal's study space" in res['hubText'] and 'Maths' in res['hubText'] and 'Science' in res['hubText'] and 'Coming soon' in res['hubText'] and res['hubLinks'] == ['#maths'] and 'How do you feel' not in res['hubText'])
     check('child: home has just two steps, no optional extras', 'How do you feel' in res['homeText'] and '12 questions' in res['homeText'] and 'Go deeper' not in res['homeText'] and 'optional' not in res['homeText'].lower())
     check('child: no Send-my-results button while saving works', 'Send my results' not in res['homeText'])
     check('child: confidence has exactly 12 topics', res.get('topicRows') == 12)
@@ -83,7 +85,7 @@ if res:
 # saving not connected (not signed in): works locally and offers the paste-a-code fallback
 NOSAVE = """
 await wait(400);
-out.home = document.body.innerText;
+location.hash = '#maths'; await wait(150); out.home = document.body.innerText;
 location.hash = '#round-q'; await wait(150);
 document.querySelector('#in-q01a').value = '168'; document.querySelector('#next').click(); await wait(100);
 out.stored = localStorage.getItem('masal-baseline-v1') ? JSON.parse(localStorage.getItem('masal-baseline-v1')).a.q01a : null;
@@ -103,7 +105,7 @@ SEED = {'answers': {
   'profile': {'main': {'hardest':'brackets <b>x</b>', 'feeling': 2}}}
 OWNER = """
 await wait(400);
-out.home = document.body.innerText;
+location.hash = '#maths'; await wait(150); out.home = document.body.innerText;
 location.hash = '#parent'; await wait(250);
 out.h1 = document.querySelector('h1').textContent;
 out.text = document.body.innerText;

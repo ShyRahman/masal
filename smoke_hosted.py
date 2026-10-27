@@ -29,7 +29,7 @@ realpub = open(os.path.join(here, 'inbox-public-key.txt')).read().strip()
 assert realpub in base, 'build.py should have put the public key in the page'
 configured = base.replace('__INBOX_TOKEN__', 'test-token-123').replace(realpub, kp['pub']).replace('ShyRahman/maths-inbox', 'test/inbox')
 FLOW = """
-await w(500); o.home = document.body.innerText;
+await w(500); o.hub = document.body.innerText; location.hash = '#maths'; await w(150); o.home = document.body.innerText;
 location.hash = '#confidence'; await w(150);
 document.querySelector('.topic[data-t="fractions"] .chip[data-l="wobbly"]').click();
 var h = document.querySelector('#hardest'); h.value = 'two brackets'; h.dispatchEvent(new Event('change'));
@@ -43,6 +43,7 @@ await w(600); o.end = document.body.innerText;
 STUB_OK = "function(u,x){window.__posts.push({u:u,h:x.headers,b:x.body});return Promise.resolve({ok:true,status:201})}"
 ok = run('ok', configured, STUB_OK, FLOW)
 check('hosted: no JS error', 'error' not in ok)
+check('hosted: opens on the subject picker', "Masal's study space" in ok['hub'] and 'Science' in ok['hub'])
 check('hosted: no "not connected" banner and no Send button while sending works', 'not connected' not in ok['home'] and 'Send my results' not in ok['home'])
 posts = ok.get('posts', [])
 check('hosted: sends go to the inbox repo issues API with the bearer token', len(posts) >= 2 and all(p['u'] == 'https://api.github.com/repos/test/inbox/issues' and p['h'].get('Authorization') == 'Bearer test-token-123' for p in posts))

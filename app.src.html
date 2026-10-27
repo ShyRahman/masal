@@ -1,4 +1,4 @@
-<title>Masal's Maths Check-in</title>
+<title>Masal's Study Space</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Patrick+Hand&display=swap">
@@ -144,7 +144,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
     if (!inboxReady()) { S.sendFailed = true; return; }
     var el = $('#sendStatus'); if (el) el.textContent = 'Sending to your parent…';
     var when = new Date().toISOString();
-    encryptForParent(JSON.stringify({ kind: kind, when: when, a: myA(), c: myC(), p: myP() })).then(function (blob) {
+    encryptForParent(JSON.stringify({ subject: 'maths', kind: kind, when: when, a: myA(), c: myC(), p: myP() })).then(function (blob) {
       return fetch('https://api.github.com/repos/' + INBOX.repo + '/issues', { method: 'POST',
         headers: { 'Authorization': 'Bearer ' + INBOX.token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'Results (' + kind + ') ' + when.slice(0, 16).replace('T', ' '), body: blob }) });
@@ -171,7 +171,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   function go(h) { if (location.hash === '#' + h) render(); else location.hash = h; }
   window.addEventListener('hashchange', function () { window.scrollTo(0, 0); render(); });
 
-  function softRender() { var r = route(); if (r === 'home' || r === 'parent' || r === '') { var y = window.scrollY; render(); window.scrollTo(0, y); } }
+  function softRender() { var r = route(); if (r === 'home' || r === 'maths' || r === 'parent' || r === '') { var y = window.scrollY; render(); window.scrollTo(0, y); } }
 
   function render() {
     var r = route(); app.className = r === 'parent' ? 'wide' : '';
@@ -179,7 +179,8 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
     if (r === 'parent') return viewParent();
     var m = r.match(/^round-([a-eq])$/);
     if (m) return viewRound(m[1]);
-    viewHome();
+    if (r === 'maths') return viewMaths();
+    viewHub();
   }
 
   /* ---------- home ---------- */
@@ -190,9 +191,18 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
     if (!S.db || S.canWrite === false || S.writeFailed) return '<div class="banner">This phone is not connected for saving, so your answers stay on this phone. When you finish a round, tap <b>Send my results</b> and paste the code to your parent.</div>';
     return '';
   }
-  function viewHome() {
+  /* ---------- subject picker ---------- */
+  function viewHub() {
+    var C = myC(), qp = roundProgress(QUICK), coreN = TOPICS.filter(function (t) { return t.core; }).length, coreRated = TOPICS.filter(function (t) { return t.core && C[t.id]; }).length;
+    var done = qp.done === qp.total && coreRated === coreN, started = qp.done || coreRated;
+    app.innerHTML = '<h1>Masal\'s study space</h1><div class="card"><p><b>Hi Masal.</b> Pick a subject to get started.</p></div>' +
+      '<div class="steps"><a class="step" href="#maths"><span><b>Maths</b><span class="muted small">' + (done ? 'Check-in finished' : started ? 'Check-in in progress' : 'Start with a short check-in, about 20 minutes') + '</span></span><span class="tick">' + (done ? 'Done ✓' : '') + '</span></a>' +
+      '<div class="step" aria-disabled="true" style="opacity:.6"><span><b>Science</b><span class="muted small">Coming soon</span></span></div></div>';
+  }
+
+  function viewMaths() {
     var A = myA(), C = myC(), conf = Object.keys(C).length;
-    var h = '<h1>Maths check-in</h1>' +
+    var h = '<a class="muted" href="#home">← All subjects</a><h1>Maths check-in</h1>' +
       '<div class="card"><p><b>Hi Masal.</b> This is not a test and nothing is graded. It helps us find out what is solid, what is wobbly, and where to spend time so maths stops feeling like a fog.</p>' +
       '<p>Two short parts, about 20 minutes in all. Use paper for working. <b>Leaving a question blank or tapping "I don\'t know yet" is a good answer</b>: it tells us exactly what to teach.</p>' +
       '<p class="small muted">Your answers are saved so your parent can look at them with you.</p></div>' + savingBanner();
@@ -220,7 +230,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
 
   /* ---------- confidence ---------- */
   function viewConfidence() {
-    var C = myC(), P = myP(), h = '<a class="muted" href="#home">← Back</a><h2>How do you feel about each topic?</h2>' +
+    var C = myC(), P = myP(), h = '<a class="muted" href="#maths">← Back</a><h2>How do you feel about each topic?</h2>' +
       '<div class="card"><p class="small muted"><b>Got it</b> = I can usually do it. <b>Wobbly</b> = sometimes right, sometimes not. <b>Lost</b> = I do not get it. <b>Not done yet</b> = we have not done it at school. Be honest, there are no wrong answers.</p>';
     function topicRow(t) {
       var cur = C[t.id] && C[t.id].level;
@@ -231,7 +241,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
     h += '</div><div class="card"><label class="f" for="hardest">The maths thing that bugs me most is…</label><textarea id="hardest" placeholder="In your own words. Anything at all.">' + esc(P.hardest || '') + '</textarea>' +
       '<div class="f" style="margin-top:6px">Right now, maths feels…</div><div class="scale">' + [[1, 'Awful'], [2, 'Hard'], [3, 'OK'], [4, 'Fine'], [5, 'Good']].map(function (s) {
         return '<button class="chip" data-f="' + s[0] + '" aria-pressed="' + (P.feeling === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div></div>' +
-      '<a class="btn primary" href="#home" id="confDone">Done</a>';
+      '<a class="btn primary" href="#maths" id="confDone">Done</a>';
     app.innerHTML = h;
     $$('.topic .chip').forEach(function (b) { b.onclick = function () {
       var id = b.parentNode.parentNode.getAttribute('data-t');
@@ -256,7 +266,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
     var queue = S.queue[rid], i2 = S.qi[rid];
     if (i2 >= queue.length) return viewRoundEnd(r);
     var q = queue[i2], pct = Math.round(i2 / queue.length * 100);
-    var h = '<div class="row spread"><a class="muted" href="#home">← Home</a><span class="muted small">' + esc(r.title) + ' · question ' + (i2 + 1) + ' of ' + queue.length + '</span></div>' +
+    var h = '<div class="row spread"><a class="muted" href="#maths">← Maths</a><span class="muted small">' + esc(r.title) + ' · question ' + (i2 + 1) + ' of ' + queue.length + '</span></div>' +
       '<div class="bar"><i style="width:' + pct + '%"></i></div>' + savingBanner() +
       '<div class="card"><div class="stem">' + M(q.stem) + '</div>' + (q.hard ? '<div class="hard">★ Higher-tier content. Skipping is completely fine.</div>' : '') +
       q.parts.map(function (p) { return partHtml(q, p, A[q.id + p.id]); }).join('') +
@@ -303,7 +313,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
       if (rec.st === 'right' && rec.sure >= 2) { var t = topicOf(q.topic).label; if (good.indexOf(t) < 0) good.push(t); } }); });
     var h = '<h2>All done. Thank you.</h2><div class="card"><p>' + (n - skipped) + ' answers in, ' + skipped + ' left blank. Both are useful.</p>' +
       (good.length ? '<p><b>Looking good:</b> ' + good.map(esc).join(', ') + '.</p>' : '') + '<p class="muted small">Nothing is marked for you here. Your parent will go through it with you, and you will get the real picture together.</p></div>' + savingBanner() + '<p class="small muted" id="sendStatus">' + (S.web && needSend() ? 'Could not send automatically. Tap Send my results and paste the code to your parent.' : S.sent.finish ? 'Sent to your parent ✓' : '') + '</p>' +
-      '<div class="row"><a class="btn primary" href="#home">Back to start</a>' + (needSend() ? '<button class="btn quiet" id="sendCode">Send my results</button>' : '') + '</div><div id="codeBox"></div>';
+      '<div class="row"><a class="btn primary" href="#home">Back to subjects</a>' + (needSend() ? '<button class="btn quiet" id="sendCode">Send my results</button>' : '') + '</div><div id="codeBox"></div>';
     app.innerHTML = h; wireCommon();
     if (S.web && !S.endSent) { S.endSent = true; autoSend('finish'); }
   }
@@ -324,13 +334,13 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   function shownRaw(p, rec) { if (!rec || rec.skipped || rec.raw === '' || rec.raw == null) return '<span class="muted">blank</span>'; if (p.kind === 'mc') return esc(p.options[+rec.raw] || rec.raw); return esc(rec.raw); }
 
   function viewParent() {
-    if (!(S.isOwner || S.canEdit)) { app.innerHTML = '<a class="muted" href="#home">← Back</a><div class="card"><p>The parent view is only for the person who set this page up.</p></div>'; return; }
+    if (!(S.isOwner || S.canEdit)) { app.innerHTML = '<a class="muted" href="#maths">← Back</a><div class="card"><p>The parent view is only for the person who set this page up.</p></div>'; return; }
     var A = S.dbAnswers, C = S.dbConf, P = S.dbProfile, qs = allQs(), parts = [], last = '';
     qs.forEach(function (x) { x.q.parts.forEach(function (p) { parts.push({ r: x.r, q: x.q, p: p, id: x.q.id + p.id, rec: A[x.q.id + p.id] }); }); });
     var answered = 0, rightN = 0, marked = 0, wrongN = 0, checkN = 0, skipN = 0;
     parts.forEach(function (x) { if (!x.rec) return; var st = effStatus(x.id, x.rec); if (x.rec.at > last) last = x.rec.at;
       if (st === 'skip') skipN++; else { answered++; if (st === 'right') { rightN++; marked++; } else if (st === 'wrong') { wrongN++; marked++; } else checkN++; } });
-    var h = '<div class="row spread"><a class="muted" href="#home">← Page Masal sees</a><span class="muted small">Live: updates as she answers</span></div><h1>Masal: where things stand</h1>';
+    var h = '<div class="row spread"><a class="muted" href="#maths">← Page Masal sees</a><span class="muted small">Live: updates as she answers</span></div><h1>Masal: where things stand</h1>';
     if (S.preview) h += '<div class="banner">You are the owner, so what you enter on the question pages is not saved. Everything below is what Masal has saved.</div>';
     h += '<div class="tiles">' +
       '<div class="tile"><b>' + answered + ' / ' + parts.length + '</b><span>answers given</span></div>' +
