@@ -95,7 +95,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   var CONF = [['got', 'Got it'], ['wobbly', 'Wobbly'], ['lost', 'Lost'], ['notyet', 'Not done yet']];
   var SURE = [[3, 'Pretty sure'], [2, 'Not sure'], [1, 'Guessing']];
   var S = { dbAnswers: {}, dbConf: {}, dbProfile: {}, dbReviews: {}, local: { a: {}, c: {}, p: {} }, mem: { a: {}, c: {}, p: {} },
-            db: null, ready: false, auto: false, sent: {}, sendFailed: false, endSent: false, isOwner: false, canEdit: false, canWrite: null, preview: false, writeFailed: false, qi: {}, queue: {}, started: 0, importMsg: '' };
+            db: null, ready: false, web: false, sent: {}, sendFailed: false, endSent: false, isOwner: false, canEdit: false, canWrite: null, preview: false, writeFailed: false, qi: {}, queue: {}, started: 0, importMsg: '' };
   var chain = Promise.resolve();
 
   /* ---------- small helpers ---------- */
@@ -126,15 +126,31 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
       softRender();
     });
   }
-  // Hosted copy (plain web page, no claude.ai): results go to the site owner as a Netlify Form submission when she finishes a part.
+  // Hosted copy (plain web page, no claude.ai): her results are encrypted in the browser with the parent's PUBLIC key, then filed as an
+  // issue in a private inbox repo using a write-limited token. Only the parent's private key (kept off the internet) can read them, so a
+  // leaked token or link exposes nothing. The three INBOX_ values are filled in by build.py; if the token is missing the page falls back to the paste-a-code button.
+  var INBOX = { repo: '__INBOX_REPO__', token: '__INBOX_TOKEN__', pub: '__INBOX_PUBKEY__' };
+  function inboxReady() { return S.web && INBOX.token.indexOf('__') !== 0 && INBOX.pub.indexOf('__') !== 0 && window.crypto && crypto.subtle; }
+  function b64(buf) { var a = new Uint8Array(buf), s = ''; for (var i = 0; i < a.length; i += 4096) s += String.fromCharCode.apply(null, a.subarray(i, i + 4096)); return btoa(s); }
+  function unb64(t) { var s = atob(t), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+  function encryptForParent(text) {   // hybrid: AES-GCM for the data, RSA-OAEP for the AES key
+    var iv = crypto.getRandomValues(new Uint8Array(12)), aes;
+    return crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']).then(function (k) { aes = k; return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, aes, new TextEncoder().encode(text)); })
+      .then(function (ct) { return crypto.subtle.exportKey('raw', aes).then(function (raw) {
+        return crypto.subtle.importKey('spki', unb64(INBOX.pub), { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['encrypt']).then(function (pk) {
+          return crypto.subtle.encrypt({ name: 'RSA-OAEP' }, pk, raw); }).then(function (wrapped) { return JSON.stringify({ v: 1, k: b64(wrapped), iv: b64(iv), ct: b64(ct) }); }); }); });
+  }
   function autoSend(kind) {
-    if (!S.auto) return;
+    if (!inboxReady()) { S.sendFailed = true; return; }
     var el = $('#sendStatus'); if (el) el.textContent = 'Sending to your parent…';
-    var body = new URLSearchParams({ 'form-name': 'results', kind: kind, when: new Date().toISOString(), code: codeFor() }).toString();
-    fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body }).then(function (r) {
+    var when = new Date().toISOString();
+    encryptForParent(JSON.stringify({ kind: kind, when: when, a: myA(), c: myC(), p: myP() })).then(function (blob) {
+      return fetch('https://api.github.com/repos/' + INBOX.repo + '/issues', { method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + INBOX.token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Results (' + kind + ') ' + when.slice(0, 16).replace('T', ' '), body: blob }) });
+    }).then(function (r) {
       if (!r.ok) throw new Error('send failed');
-      S.sent[kind] = new Date().toISOString(); S.sendFailed = false;
-      var e2 = $('#sendStatus'); if (e2) e2.textContent = 'Sent to your parent ✓';
+      S.sent[kind] = when; S.sendFailed = false; var e2 = $('#sendStatus'); if (e2) e2.textContent = 'Sent to your parent ✓';
     }).catch(function () { S.sendFailed = true; if (route() === 'round-q') render(); });
   }
   function codeFor() {
@@ -167,9 +183,9 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   }
 
   /* ---------- home ---------- */
-  function needSend() { if (S.auto) return S.sendFailed; return S.ready && (!S.db || S.canWrite === false || S.writeFailed) && !S.preview; }   // the paste-a-code fallback only appears when saving is not connected
+  function needSend() { if (S.web) return S.sendFailed || !inboxReady(); return S.ready && (!S.db || S.canWrite === false || S.writeFailed) && !S.preview; }   // the paste-a-code fallback only appears when saving is not connected
   function savingBanner() {
-    if (!S.ready || S.auto) return '';
+    if (!S.ready || S.web) return '';
     if (S.preview) return '<div class="banner"><b>Preview mode.</b> You are signed in as the owner, so nothing you enter here is saved. <button class="btn quiet" id="asMasal" style="min-height:36px;margin-left:6px">Answer as Masal</button></div>';
     if (!S.db || S.canWrite === false || S.writeFailed) return '<div class="banner">This phone is not connected for saving, so your answers stay on this phone. When you finish a round, tap <b>Send my results</b> and paste the code to your parent.</div>';
     return '';
@@ -286,10 +302,10 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
     r.qs.forEach(function (q) { q.parts.forEach(function (p) { var rec = A[q.id + p.id]; if (!rec) return; n++; if (rec.st === 'skip') skipped++;
       if (rec.st === 'right' && rec.sure >= 2) { var t = topicOf(q.topic).label; if (good.indexOf(t) < 0) good.push(t); } }); });
     var h = '<h2>All done. Thank you.</h2><div class="card"><p>' + (n - skipped) + ' answers in, ' + skipped + ' left blank. Both are useful.</p>' +
-      (good.length ? '<p><b>Looking good:</b> ' + good.map(esc).join(', ') + '.</p>' : '') + '<p class="muted small">Nothing is marked for you here. Your parent will go through it with you, and you will get the real picture together.</p></div>' + savingBanner() + '<p class="small muted" id="sendStatus">' + (S.auto && S.sendFailed ? 'Could not send automatically. Tap Send my results and paste the code to your parent.' : S.sent.finish ? 'Sent to your parent ✓' : '') + '</p>' +
+      (good.length ? '<p><b>Looking good:</b> ' + good.map(esc).join(', ') + '.</p>' : '') + '<p class="muted small">Nothing is marked for you here. Your parent will go through it with you, and you will get the real picture together.</p></div>' + savingBanner() + '<p class="small muted" id="sendStatus">' + (S.web && needSend() ? 'Could not send automatically. Tap Send my results and paste the code to your parent.' : S.sent.finish ? 'Sent to your parent ✓' : '') + '</p>' +
       '<div class="row"><a class="btn primary" href="#home">Back to start</a>' + (needSend() ? '<button class="btn quiet" id="sendCode">Send my results</button>' : '') + '</div><div id="codeBox"></div>';
     app.innerHTML = h; wireCommon();
-    if (S.auto && !S.endSent) { S.endSent = true; autoSend('finish'); }
+    if (S.web && !S.endSent) { S.endSent = true; autoSend('finish'); }
   }
 
   /* ---------- parent view ---------- */
@@ -388,7 +404,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
   function start() {
     loadLocal(); render();
     var cl = window.claude;
-    if (!cl || !cl.use) { S.auto = /^https?:/.test(location.protocol); S.ready = true; render(); return; }
+    if (!cl || !cl.use) { S.web = /^https?:/.test(location.protocol); S.ready = true; render(); return; }
     cl.use('user').then(function (u) {
       if (!u) return;
       return Promise.all([u.isOwner(), u.canEdit(), u.can('data.write')]).then(function (v) { S.isOwner = !!v[0]; S.canEdit = !!v[1]; S.canWrite = v[2]; S.preview = S.isOwner || S.canEdit; });

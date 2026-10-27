@@ -1,0 +1,31 @@
+# Builds the page and publishes it to GitHub Pages. The inbox token comes from the repository secret INBOX_TOKEN and is only ever
+# written into the built page, never into a commit. Without the secret the page still deploys and offers a paste-a-code fallback.
+name: Deploy page
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build page
+        env:
+          INBOX_TOKEN: ${{ secrets.INBOX_TOKEN }}
+        run: python3 build.py
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/site
+      - id: deployment
+        uses: actions/deploy-pages@v4
