@@ -1,0 +1,3 @@
+# Netlify serves the built page straight from the repo: no build step. Run `python3 build.py` before committing so dist/site is current.
+[build]
+  publish = "dist/site"

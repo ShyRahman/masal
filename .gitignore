@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+# build outputs: only the Netlify site folder is kept
+dist/*
+!dist/site/
+dist/site/_t_*

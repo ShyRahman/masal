@@ -1,0 +1,403 @@
+<title>Masal's Maths Check-in</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: one narrow column on squared paper, like her exercise book. The green pen colour is the only strong accent. */
+:root {
+  --paper: #f4f7f3; --grid: rgba(70, 120, 150, .13); --card: #ffffff; --ink: #1c2630; --muted: #56636d;
+  --line: #c9d3cc; --pen: #157a3d; --pen-soft: #e2f3e7; --on-pen: #ffffff;
+  --amber: #9a5b00; --amber-soft: #fdf0d4; --red: #b3261e; --red-soft: #fbe5e3; --grey-soft: #eaeeea;
+  --font-body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-hand: 'Patrick Hand', 'Atkinson Hyperlegible', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #151b20; --grid: rgba(150, 190, 210, .08); --card: #1e262d; --ink: #e8eef0; --muted: #a2b0b8;
+  --line: #34424b; --pen: #55c47f; --pen-soft: #1b3326; --on-pen: #0d1a12;
+  --amber: #f0b64a; --amber-soft: #3a2d10; --red: #ff8f86; --red-soft: #3a1c1a; --grey-soft: #28323a; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --paper: #151b20; --grid: rgba(150, 190, 210, .08); --card: #1e262d; --ink: #e8eef0; --muted: #a2b0b8;
+  --line: #34424b; --pen: #55c47f; --pen-soft: #1b3326; --on-pen: #0d1a12;
+  --amber: #f0b64a; --amber-soft: #3a2d10; --red: #ff8f86; --red-soft: #3a1c1a; --grey-soft: #28323a; color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+body { background-color: var(--paper); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 22px 22px; color: var(--ink); font: 17px/1.5 var(--font-body); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; }
+#app { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+#app.wide { max-width: 980px; }
+h1, h2, h3 { font-family: var(--font-hand); font-weight: 400; line-height: 1.15; margin: 0; text-wrap: balance; }
+h1 { font-size: 2.1rem; } h2 { font-size: 1.55rem; } h3 { font-size: 1.2rem; }
+p { margin: 0; } .muted { color: var(--muted); } .small { font-size: .88rem; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.banner { background: var(--amber-soft); color: var(--ink); border-left: 4px solid var(--amber); border-radius: 6px; padding: 10px 12px; font-size: .95rem; }
+.btn { font: 700 1rem var(--font-body); min-height: 48px; padding: 0 18px; border-radius: 8px; border: 2px solid var(--pen); background: transparent; color: var(--pen); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.btn.primary { background: var(--pen); color: var(--on-pen); }
+.btn.quiet { border-color: var(--line); color: var(--muted); font-weight: 400; }
+.btn:focus-visible, .chip:focus-visible, input:focus-visible, textarea:focus-visible, .step:focus-visible { outline: 3px solid var(--pen); outline-offset: 2px; }
+.btn[disabled] { opacity: .45; cursor: default; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.row.spread { justify-content: space-between; }
+.steps { display: flex; flex-direction: column; gap: 10px; }
+.step { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; color: inherit; text-decoration: none; min-height: 64px; }
+.step b { font-family: var(--font-hand); font-weight: 400; font-size: 1.25rem; display: block; }
+.tick { font-family: var(--font-hand); font-size: 1.5rem; color: var(--pen); white-space: nowrap; }
+.bar { height: 8px; background: var(--grey-soft); border-radius: 4px; overflow: hidden; } .bar > i { display: block; height: 100%; background: var(--pen); }
+.strand { font-family: var(--font-hand); font-size: 1.3rem; margin-top: 8px; }
+.topic { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); }
+.topic:first-of-type { border-top: 0; }
+.opts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.chip { font: 400 .92rem var(--font-body); min-height: 46px; padding: 4px 6px; border: 2px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; cursor: pointer; line-height: 1.2; }
+.chip[aria-pressed="true"] { border-color: var(--pen); background: var(--pen-soft); font-weight: 700; }
+.chip.c-wobbly[aria-pressed="true"] { border-color: var(--amber); background: var(--amber-soft); }
+.chip.c-lost[aria-pressed="true"] { border-color: var(--red); background: var(--red-soft); }
+.chip.c-notyet[aria-pressed="true"] { border-color: var(--muted); background: var(--grey-soft); }
+.chips3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: .95rem; color: var(--muted); }
+input[type=text], textarea { font: 400 1.15rem var(--font-body); padding: 10px 12px; border: 2px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); width: 100%; min-height: 48px; }
+textarea { min-height: 84px; resize: vertical; }
+.stem { font-size: 1.2rem; line-height: 1.6; }
+.part { display: flex; flex-direction: column; gap: 4px; }
+.part .lab { font-size: 1.05rem; }
+.keys { display: flex; gap: 6px; flex-wrap: wrap; }
+.keys button { min-width: 44px; min-height: 44px; font: 400 1.15rem var(--font-body); border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 6px; cursor: pointer; }
+.mcopt { display: flex; gap: 10px; align-items: center; min-height: 48px; border: 2px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--card); cursor: pointer; }
+.mcopt:has(input:checked) { border-color: var(--pen); background: var(--pen-soft); }
+.calc { background: var(--grey-soft); border-radius: 4px; padding: 1px 6px; font-size: .85rem; }
+.hard { font-size: .85rem; color: var(--muted); }
+sup { font-size: 70%; line-height: 0; }
+.fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; line-height: 1.15; margin: 0 2px; font-size: 95%; }
+.fr > span:first-child { border-bottom: 1.5px solid currentColor; padding: 0 3px; } .fr > span:last-child { padding: 0 3px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 2px; }
+.tile b { font-size: 1.7rem; font-family: var(--font-hand); font-weight: 400; } .tile span { color: var(--muted); font-size: .88rem; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; font-variant-numeric: tabular-nums; }
+th, td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: top; }
+th { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.pill { display: inline-block; border-radius: 99px; padding: 1px 9px; font-size: .82rem; font-weight: 700; white-space: nowrap; }
+.pill.right { background: var(--pen-soft); color: var(--pen); } .pill.wrong { background: var(--red-soft); color: var(--red); }
+.pill.check { background: var(--amber-soft); color: var(--amber); } .pill.skip { background: var(--grey-soft); color: var(--muted); }
+.pill.note { background: var(--amber-soft); color: var(--amber); } .pill.good { background: var(--pen-soft); color: var(--pen); }
+.ov button { font: 400 .8rem var(--font-body); min-height: 30px; padding: 0 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 5px; cursor: pointer; margin-right: 4px; }
+.ov button[aria-pressed="true"] { border-color: var(--pen); background: var(--pen-soft); font-weight: 700; }
+.code { font-family: ui-monospace, Menlo, monospace; font-size: .75rem; min-height: 90px; }
+details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.25rem; min-height: 44px; display: flex; align-items: center; }
+@media (prefers-reduced-motion: no-preference) { .bar > i { transition: width .3s; } }
+</style>
+<div id="app"><p class="muted">Loading…</p></div>
+<script>
+/*MARKER*/
+/*QUESTIONS*/
+(function () {
+  'use strict';
+  var app = document.getElementById('app');
+  var LS = 'masal-baseline-v1';
+  var CONF = [['got', 'Got it'], ['wobbly', 'Wobbly'], ['lost', 'Lost'], ['notyet', 'Not done yet']];
+  var SURE = [[3, 'Pretty sure'], [2, 'Not sure'], [1, 'Guessing']];
+  var S = { dbAnswers: {}, dbConf: {}, dbProfile: {}, dbReviews: {}, local: { a: {}, c: {}, p: {} }, mem: { a: {}, c: {}, p: {} },
+            db: null, ready: false, auto: false, sent: {}, sendFailed: false, endSent: false, isOwner: false, canEdit: false, canWrite: null, preview: false, writeFailed: false, qi: {}, queue: {}, started: 0, importMsg: '' };
+  var chain = Promise.resolve();
+
+  /* ---------- small helpers ---------- */
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function M(s) { return String(s).replace(/\^\{([^{}]*)\}/g, '<sup>$1</sup>').replace(/\{([^{}]*?)\/\/([^{}]*?)\}/g, '<span class="fr"><span>$1</span><span>$2</span></span>'); }
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  var ALLR = [QUICK];
+  function allQs() { return QUICK.qs.map(function (q) { return { r: QUICK, q: q }; }); }
+  function topicOf(id) { return TOPICS.filter(function (t) { return t.id === id; })[0]; }
+  function when(iso) { try { return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+  function merge(a, b, c) { return Object.assign({}, a, b, c); }
+  function myA() { return merge(S.local.a, S.dbAnswers, S.mem.a); }
+  function myC() { return merge(S.local.c, S.dbConf, S.mem.c); }
+  function myP() { return Object.assign({}, S.local.p.main, S.dbProfile, S.mem.p.main); }   // profile docs are keyed by id ('main'); merged flat
+
+  function loadLocal() { try { var j = JSON.parse(localStorage.getItem(LS) || 'null'); if (j && j.a) S.local = { a: j.a || {}, c: j.c || {}, p: j.p || {} }; } catch (e) {} }
+  function saveLocal() { try { localStorage.setItem(LS, JSON.stringify({ a: merge(S.local.a, null, S.mem.a), c: merge(S.local.c, null, S.mem.c), p: Object.assign({}, S.local.p, S.mem.p) })); } catch (e) {} }
+
+  /* ---------- saving ---------- */
+  function persist(coll, id, data, memKey) {
+    S.mem[memKey][id] = data;
+    if (S.preview) return;
+    saveLocal();
+    if (!S.db || S.canWrite === false || S.writeFailed) return;
+    chain = chain.then(function () { return S.db.collection(coll).doc(id).set(data); }).catch(function (e) {
+      if (e && e.code === 'invalid_argument') S.writeFailed = true;
+      softRender();
+    });
+  }
+  // Hosted copy (plain web page, no claude.ai): results go to the site owner as a Netlify Form submission when she finishes a part.
+  function autoSend(kind) {
+    if (!S.auto) return;
+    var el = $('#sendStatus'); if (el) el.textContent = 'Sending to your parent…';
+    var body = new URLSearchParams({ 'form-name': 'results', kind: kind, when: new Date().toISOString(), code: codeFor() }).toString();
+    fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body }).then(function (r) {
+      if (!r.ok) throw new Error('send failed');
+      S.sent[kind] = new Date().toISOString(); S.sendFailed = false;
+      var e2 = $('#sendStatus'); if (e2) e2.textContent = 'Sent to your parent ✓';
+    }).catch(function () { S.sendFailed = true; if (route() === 'round-q') render(); });
+  }
+  function codeFor() {
+    var j = JSON.stringify({ v: 1, a: myA(), c: myC(), p: myP() });
+    try { return btoa(unescape(encodeURIComponent(j))); } catch (e) { return ''; }
+  }
+
+  /* ---------- progress maths ---------- */
+  function roundProgress(r) {
+    var A = myA(), done = 0;
+    r.qs.forEach(function (q) { if (q.parts.some(function (p) { return A[q.id + p.id]; })) done++; });
+    return { done: done, total: r.qs.length };
+  }
+  function effStatus(id, rec) { var rv = S.dbReviews[id]; return rv && rv.st ? rv.st : rec.st; }
+
+  /* ---------- routing ---------- */
+  function route() { return (location.hash || '#home').slice(1); }
+  function go(h) { if (location.hash === '#' + h) render(); else location.hash = h; }
+  window.addEventListener('hashchange', function () { window.scrollTo(0, 0); render(); });
+
+  function softRender() { var r = route(); if (r === 'home' || r === 'parent' || r === '') { var y = window.scrollY; render(); window.scrollTo(0, y); } }
+
+  function render() {
+    var r = route(); app.className = r === 'parent' ? 'wide' : '';
+    if (r === 'confidence') return viewConfidence();
+    if (r === 'parent') return viewParent();
+    var m = r.match(/^round-([a-eq])$/);
+    if (m) return viewRound(m[1]);
+    viewHome();
+  }
+
+  /* ---------- home ---------- */
+  function needSend() { if (S.auto) return S.sendFailed; return S.ready && (!S.db || S.canWrite === false || S.writeFailed) && !S.preview; }   // the paste-a-code fallback only appears when saving is not connected
+  function savingBanner() {
+    if (!S.ready || S.auto) return '';
+    if (S.preview) return '<div class="banner"><b>Preview mode.</b> You are signed in as the owner, so nothing you enter here is saved. <button class="btn quiet" id="asMasal" style="min-height:36px;margin-left:6px">Answer as Masal</button></div>';
+    if (!S.db || S.canWrite === false || S.writeFailed) return '<div class="banner">This phone is not connected for saving, so your answers stay on this phone. When you finish a round, tap <b>Send my results</b> and paste the code to your parent.</div>';
+    return '';
+  }
+  function viewHome() {
+    var A = myA(), C = myC(), conf = Object.keys(C).length;
+    var h = '<h1>Maths check-in</h1>' +
+      '<div class="card"><p><b>Hi Masal.</b> This is not a test and nothing is graded. It helps us find out what is solid, what is wobbly, and where to spend time so maths stops feeling like a fog.</p>' +
+      '<p>Two short parts, about 20 minutes in all. Use paper for working. <b>Leaving a question blank or tapping "I don\'t know yet" is a good answer</b>: it tells us exactly what to teach.</p>' +
+      '<p class="small muted">Your answers are saved so your parent can look at them with you.</p></div>' + savingBanner();
+    var coreN = TOPICS.filter(function (t) { return t.core; }).length, coreRated = TOPICS.filter(function (t) { return t.core && C[t.id]; }).length;
+    var qp = roundProgress(QUICK);
+    h += '<div class="steps"><a class="step" href="#confidence"><span><b>1. How do you feel about each topic?</b><span class="muted small">About 3 minutes. Just tap.</span></span><span class="tick">' + (coreRated === coreN ? 'Done ✓' : coreRated ? coreRated + '/' + coreN : '') + '</span></a>' +
+      '<a class="step" href="#round-q"><span><b>2. ' + QUICK.qs.length + ' questions</b><span class="muted small">About ' + QUICK.mins + ' minutes' + (qp.done && qp.done < qp.total ? ' (' + qp.done + ' of ' + qp.total + ' done)' : '') + '</span></span><span class="tick">' + (qp.done === qp.total ? 'Done ✓' : '') + '</span></a></div>' +
+      '<div class="row">' + (needSend() ? '<button class="btn quiet" id="sendCode">Send my results</button>' : '') + ((S.isOwner || S.canEdit) ? '<a class="btn" href="#parent">Parent view</a>' : '') + '</div><div id="codeBox"></div>';
+    app.innerHTML = h;
+    wireCommon();
+  }
+  function wireCommon() {
+    var b = $('#asMasal'); if (b) b.onclick = function () { S.preview = false; render(); };
+    var s = $('#sendCode'); if (s) s.onclick = function () { showCode($('#codeBox')); };
+  }
+  function showCode(box) {
+    var code = codeFor();
+    box.innerHTML = '<div class="card"><p class="small">Copy this and paste it into a message to your parent. It is just your answers in code.</p><textarea class="code" id="codeTa" readonly>' + esc(code) + '</textarea><div class="row"><button class="btn" id="copyCode">Copy</button><span class="small muted" id="copyMsg"></span></div></div>';
+    $('#copyCode').onclick = function () {
+      var ta = $('#codeTa'), msg = $('#copyMsg');
+      function sel() { ta.focus(); ta.select(); msg.textContent = 'Select and copy the text above.'; }
+      try { navigator.clipboard.writeText(code).then(function () { msg.textContent = 'Copied.'; }, sel); } catch (e) { sel(); }
+    };
+  }
+
+  /* ---------- confidence ---------- */
+  function viewConfidence() {
+    var C = myC(), P = myP(), h = '<a class="muted" href="#home">← Back</a><h2>How do you feel about each topic?</h2>' +
+      '<div class="card"><p class="small muted"><b>Got it</b> = I can usually do it. <b>Wobbly</b> = sometimes right, sometimes not. <b>Lost</b> = I do not get it. <b>Not done yet</b> = we have not done it at school. Be honest, there are no wrong answers.</p>';
+    function topicRow(t) {
+      var cur = C[t.id] && C[t.id].level;
+      return '<div class="topic" data-t="' + t.id + '"><div>' + esc(t.label) + '</div><div class="opts">' + CONF.map(function (c) {
+        return '<button class="chip c-' + c[0] + '" data-l="' + c[0] + '" aria-pressed="' + (cur === c[0]) + '">' + c[1] + '</button>'; }).join('') + '</div></div>';
+    }
+    h += TOPICS.filter(function (t) { return t.core; }).map(topicRow).join('');
+    h += '</div><div class="card"><label class="f" for="hardest">The maths thing that bugs me most is…</label><textarea id="hardest" placeholder="In your own words. Anything at all.">' + esc(P.hardest || '') + '</textarea>' +
+      '<div class="f" style="margin-top:6px">Right now, maths feels…</div><div class="scale">' + [[1, 'Awful'], [2, 'Hard'], [3, 'OK'], [4, 'Fine'], [5, 'Good']].map(function (s) {
+        return '<button class="chip" data-f="' + s[0] + '" aria-pressed="' + (P.feeling === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div></div>' +
+      '<a class="btn primary" href="#home" id="confDone">Done</a>';
+    app.innerHTML = h;
+    $$('.topic .chip').forEach(function (b) { b.onclick = function () {
+      var id = b.parentNode.parentNode.getAttribute('data-t');
+      persist('confidence', id, { level: b.getAttribute('data-l'), at: new Date().toISOString() }, 'c');
+      $$('.chip', b.parentNode).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    }; });
+    function saveProfile(patch) { persist('profile', 'main', Object.assign({}, myP(), patch, { at: new Date().toISOString() }), 'p'); }
+    $('#confDone').onclick = function () { autoSend('topics'); };
+    $('#hardest').onchange = function () { saveProfile({ hardest: this.value.slice(0, 1000) }); };
+    $$('[data-f]').forEach(function (b) { b.onclick = function () {
+      saveProfile({ feeling: +b.getAttribute('data-f') });
+      $$('[data-f]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    }; });
+  }
+
+  /* ---------- rounds ---------- */
+  function viewRound(rid) {
+    var r = ALLR.filter(function (x) { return x.id === rid; })[0], A = myA();
+    if (!S.queue[rid]) {   // only what she has not answered yet, so the longer rounds never repeat the quick start
+      S.queue[rid] = r.qs.filter(function (q) { return !q.parts.some(function (p) { return A[q.id + p.id]; }); }); S.qi[rid] = 0;
+    }
+    var queue = S.queue[rid], i2 = S.qi[rid];
+    if (i2 >= queue.length) return viewRoundEnd(r);
+    var q = queue[i2], pct = Math.round(i2 / queue.length * 100);
+    var h = '<div class="row spread"><a class="muted" href="#home">← Home</a><span class="muted small">' + esc(r.title) + ' · question ' + (i2 + 1) + ' of ' + queue.length + '</span></div>' +
+      '<div class="bar"><i style="width:' + pct + '%"></i></div>' + savingBanner() +
+      '<div class="card"><div class="stem">' + M(q.stem) + '</div>' + (q.hard ? '<div class="hard">★ Higher-tier content. Skipping is completely fine.</div>' : '') +
+      q.parts.map(function (p) { return partHtml(q, p, A[q.id + p.id]); }).join('') +
+      '<div class="keys" id="keys" aria-label="Maths symbols">' + ['−', '/', '^', '(', ')', 'π', '×'].map(function (k) { return '<button type="button" data-k="' + k + '" tabindex="-1">' + k + '</button>'; }).join('') + '</div>' +
+      '<div class="f" style="margin-top:4px">How sure are you?</div><div class="chips3">' + SURE.map(function (s) {
+        var rec = A[q.id + q.parts[0].id], on = rec && rec.sure === s[0]; return '<button class="chip" data-s="' + s[0] + '" aria-pressed="' + !!on + '">' + s[1] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="row spread"><button class="btn quiet" id="back"' + (i2 === 0 ? ' disabled' : '') + '>Back</button><button class="btn quiet" id="skip">I don\'t know yet</button><button class="btn primary" id="next">Next</button></div>';
+    app.innerHTML = h; S.started = Date.now(); wireCommon();
+    var sure = 0; var prior = A[q.id + q.parts[0].id]; if (prior && prior.sure) sure = prior.sure;
+    $$('[data-s]').forEach(function (b) { b.onclick = function () { sure = +b.getAttribute('data-s'); $$('[data-s]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); }; });
+    var last = null;
+    $$('input[type=text], textarea').forEach(function (el) { el.addEventListener('focus', function () { last = el; }); });
+    $$('#keys button').forEach(function (b) {
+      b.addEventListener('pointerdown', function (e) { e.preventDefault(); });
+      b.onclick = function () { var el = last || $('input[type=text]'); if (!el) return; el.focus(); var k = b.getAttribute('data-k'); el.setRangeText(k, el.selectionStart, el.selectionEnd, 'end'); };
+    });
+    if (!$('input[type=text]')) $('#keys').hidden = true;
+    function collect(skipAll) {
+      var secs = Math.min(900, Math.round((Date.now() - S.started) / 1000)), now = new Date().toISOString();
+      q.parts.forEach(function (p) {
+        var raw = '';
+        if (!skipAll) {
+          if (p.kind === 'mc') { var c = $('input[name="' + q.id + p.id + '"]:checked'); raw = c ? c.value : ''; }
+          else raw = ($('#in-' + q.id + p.id).value || '').slice(0, 300);
+        }
+        persist('answers', q.id + p.id, { r: rid, q: q.id, p: p.id, topic: q.topic, raw: raw, st: markPart(p, raw), sure: skipAll || !String(raw).trim() ? 0 : sure, skipped: !!skipAll, secs: secs, at: now }, 'a');
+      });
+    }
+    $('#next').onclick = function () { collect(false); S.qi[rid] = i2 + 1; render(); window.scrollTo(0, 0); };
+    $('#skip').onclick = function () { collect(true); S.qi[rid] = i2 + 1; render(); window.scrollTo(0, 0); };
+    $('#back').onclick = function () { S.qi[rid] = Math.max(0, i2 - 1); render(); window.scrollTo(0, 0); };
+  }
+  function partHtml(q, p, rec) {
+    var id = q.id + p.id, val = rec && !rec.skipped ? rec.raw : '';
+    if (p.kind === 'mc') return '<div class="part">' + (p.label ? '<div class="lab">' + M(p.label) + '</div>' : '') + p.options.map(function (o, i) {
+      return '<label class="mcopt"><input type="radio" name="' + id + '" value="' + i + '"' + (String(val) === String(i) && val !== '' ? ' checked' : '') + '> <span>' + esc(o) + '</span></label>'; }).join('') + '</div>';
+    if (p.area) return '<div class="part"><label class="lab" for="in-' + id + '">' + M(p.label || '') + '</label><textarea id="in-' + id + '" autocomplete="off" autocapitalize="sentences">' + esc(val) + '</textarea></div>';
+    return '<div class="part"><label class="lab" for="in-' + id + '">' + (p.label ? M(p.label) : 'Answer') + '</label><input type="text" id="in-' + id + '" value="' + esc(val) + '" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next">' +
+      (p.hint ? '<span class="small muted">' + esc(p.hint) + '</span>' : '') + '</div>';
+  }
+  function viewRoundEnd(r) {
+    var A = myA(), good = [], n = 0, skipped = 0;
+    r.qs.forEach(function (q) { q.parts.forEach(function (p) { var rec = A[q.id + p.id]; if (!rec) return; n++; if (rec.st === 'skip') skipped++;
+      if (rec.st === 'right' && rec.sure >= 2) { var t = topicOf(q.topic).label; if (good.indexOf(t) < 0) good.push(t); } }); });
+    var h = '<h2>All done. Thank you.</h2><div class="card"><p>' + (n - skipped) + ' answers in, ' + skipped + ' left blank. Both are useful.</p>' +
+      (good.length ? '<p><b>Looking good:</b> ' + good.map(esc).join(', ') + '.</p>' : '') + '<p class="muted small">Nothing is marked for you here. Your parent will go through it with you, and you will get the real picture together.</p></div>' + savingBanner() + '<p class="small muted" id="sendStatus">' + (S.auto && S.sendFailed ? 'Could not send automatically. Tap Send my results and paste the code to your parent.' : S.sent.finish ? 'Sent to your parent ✓' : '') + '</p>' +
+      '<div class="row"><a class="btn primary" href="#home">Back to start</a>' + (needSend() ? '<button class="btn quiet" id="sendCode">Send my results</button>' : '') + '</div><div id="codeBox"></div>';
+    app.innerHTML = h; wireCommon();
+    if (S.auto && !S.endSent) { S.endSent = true; autoSend('finish'); }
+  }
+
+  /* ---------- parent view ---------- */
+  function fmtExp(p) {
+    if (p.kind === 'mc') return p.options[p.correct];
+    if (p.kind === 'alg') return p.variants[0];
+    if (p.kind === 'prime') return p.exp.replace(/\^(\d+)/g, '^{$1}').replace(/\*/g, ' × ');
+    if (p.kind === 'sf') { var e = Math.floor(Math.log10(Math.abs(p.exp)) + 1e-12), m = Math.round(p.exp / Math.pow(10, e) * 1e6) / 1e6; return m + ' × 10^{' + e + '}'; }
+    if (p.kind === 'num') {
+      var v = p.exp; if (Math.abs(v - Math.round(v)) < 1e-9) return String(Math.round(v));
+      for (var d = 2; d <= 64; d++) { var n = v * d; if (Math.abs(n - Math.round(n)) < 1e-9) return Math.round(n) + '/' + d + (d > 1 && v > 1 ? ' (' + Math.floor(v) + ' ' + Math.round((v - Math.floor(v)) * d) + '/' + d + ')' : ''); }
+      return String(Math.round(v * 1e4) / 1e4);
+    }
+    return '(explanation)';
+  }
+  function shownRaw(p, rec) { if (!rec || rec.skipped || rec.raw === '' || rec.raw == null) return '<span class="muted">blank</span>'; if (p.kind === 'mc') return esc(p.options[+rec.raw] || rec.raw); return esc(rec.raw); }
+
+  function viewParent() {
+    if (!(S.isOwner || S.canEdit)) { app.innerHTML = '<a class="muted" href="#home">← Back</a><div class="card"><p>The parent view is only for the person who set this page up.</p></div>'; return; }
+    var A = S.dbAnswers, C = S.dbConf, P = S.dbProfile, qs = allQs(), parts = [], last = '';
+    qs.forEach(function (x) { x.q.parts.forEach(function (p) { parts.push({ r: x.r, q: x.q, p: p, id: x.q.id + p.id, rec: A[x.q.id + p.id] }); }); });
+    var answered = 0, rightN = 0, marked = 0, wrongN = 0, checkN = 0, skipN = 0;
+    parts.forEach(function (x) { if (!x.rec) return; var st = effStatus(x.id, x.rec); if (x.rec.at > last) last = x.rec.at;
+      if (st === 'skip') skipN++; else { answered++; if (st === 'right') { rightN++; marked++; } else if (st === 'wrong') { wrongN++; marked++; } else checkN++; } });
+    var h = '<div class="row spread"><a class="muted" href="#home">← Page Masal sees</a><span class="muted small">Live: updates as she answers</span></div><h1>Masal: where things stand</h1>';
+    if (S.preview) h += '<div class="banner">You are the owner, so what you enter on the question pages is not saved. Everything below is what Masal has saved.</div>';
+    h += '<div class="tiles">' +
+      '<div class="tile"><b>' + answered + ' / ' + parts.length + '</b><span>answers given</span></div>' +
+      '<div class="tile"><b>' + (marked ? Math.round(rightN / marked * 100) + '%' : '–') + '</b><span>right, of those the page could mark (' + marked + ')</span></div>' +
+      '<div class="tile"><b>' + checkN + '</b><span>need your eye</span></div>' +
+      '<div class="tile"><b>' + skipN + '</b><span>skipped / don\'t know</span></div>' +
+      '<div class="tile"><b>' + TOPICS.filter(function (t) { return t.core && C[t.id]; }).length + ' / ' + TOPICS.filter(function (t) { return t.core; }).length + '</b><span>topics rated</span></div>' +
+      '<div class="tile"><b style="font-size:1.2rem">' + (last ? when(last) : 'Not started') + '</b><span>last active</span></div></div>';
+    if (P.hardest || P.feeling) h += '<div class="card"><h3>In her words</h3>' + (P.feeling ? '<p>Maths feels: <b>' + ['', 'Awful', 'Hard', 'OK', 'Fine', 'Good'][P.feeling] + '</b> (' + P.feeling + '/5)</p>' : '') + (P.hardest ? '<p>“' + esc(P.hardest) + '”</p>' : '') + '</div>';
+
+    // confidence vs result
+    var rows = TOPICS.filter(function (t) { return t.core; }).map(function (t) {
+      var ps = parts.filter(function (x) { return x.q.topic === t.id && x.rec; }), c = { right: 0, wrong: 0, check: 0, skip: 0 };
+      ps.forEach(function (x) { c[effStatus(x.id, x.rec)]++; });
+      var lvl = C[t.id] && C[t.id].level, tot = ps.length, note = '', cls = 'note';
+      if (lvl === 'got' && c.wrong) { note = 'Says confident, got some wrong'; }
+      else if ((lvl === 'lost' || lvl === 'wobbly') && tot && !c.wrong && !c.skip && !c.check && c.right === tot) { note = 'Better than she thinks'; cls = 'good'; }
+      else if (tot && c.skip * 2 >= tot) { note = 'Mostly skipped'; }
+      return { t: t, lvl: lvl, c: c, tot: tot, note: note, cls: cls };
+    });
+    rows = rows.filter(function (x) { return x.tot || x.lvl; }).concat(rows.filter(function (x) { return !x.tot && !x.lvl; }));   // topics with something to show first
+    h += '<div class="card"><h3>What she says vs what she did</h3><div class="scroll"><table><tr><th>Topic</th><th>She says</th><th>Result</th><th></th></tr>' + rows.map(function (x) {
+      var lab = x.lvl ? CONF.filter(function (c) { return c[0] === x.lvl; })[0][1] : '<span class="muted">not rated</span>';
+      var res = x.tot ? (x.c.right + ' right' + (x.c.wrong ? ', ' + x.c.wrong + ' wrong' : '') + (x.c.check ? ', ' + x.c.check + ' to check' : '') + (x.c.skip ? ', ' + x.c.skip + ' skipped' : '')) : '<span class="muted">not done yet</span>';
+      return '<tr><td>' + esc(x.t.label) + '</td><td>' + lab + '</td><td>' + res + '</td><td>' + (x.note ? '<span class="pill ' + x.cls + '">' + x.note + '</span>' : '') + '</td></tr>'; }).join('') + '</table></div></div>';
+
+    // sure but wrong; guessed but right
+    var sw = parts.filter(function (x) { return x.rec && x.rec.sure === 3 && effStatus(x.id, x.rec) === 'wrong'; });
+    var gr = parts.filter(function (x) { return x.rec && x.rec.sure === 1 && effStatus(x.id, x.rec) === 'right'; });
+    h += '<div class="card"><h3>Worth talking about</h3><p><b>Pretty sure but wrong</b> (a belief to untangle, usually the most useful finding): ' + (sw.length ? sw.map(function (x) { return esc(topicOf(x.q.topic).label) + ' (' + x.q.id + x.p.id + ')'; }).join('; ') : '<span class="muted">none yet</span>') + '</p>' +
+      '<p><b>Guessing but right</b> (knows more than she thinks): ' + (gr.length ? gr.map(function (x) { return esc(topicOf(x.q.topic).label) + ' (' + x.q.id + x.p.id + ')'; }).join('; ') : '<span class="muted">none yet</span>') + '</p></div>';
+
+    // detail by round
+    [QUICK].forEach(function (r) {
+      var ps = parts.filter(function (x) { return x.r === r; });
+      h += '<details open><summary>Every answer (' + ps.filter(function (x) { return x.rec; }).length + '/' + ps.length + ')</summary><div class="card scroll"><table><tr><th>Q</th><th>Her answer</th><th>Expected</th><th>Mark</th><th>Sure?</th><th>Your call</th></tr>' + ps.map(function (x) {
+        if (!x.rec) return '<tr><td>' + x.id + '</td><td colspan="5" class="muted">not done</td></tr>';
+        var st = effStatus(x.id, x.rec), rv = S.dbReviews[x.id] && S.dbReviews[x.id].st, sureL = { 0: 'don\'t know', 1: 'guessing', 2: 'not sure', 3: 'pretty sure' }[x.rec.sure] || '';
+        return '<tr><td>' + x.id + (x.q.hard ? ' ★' : '') + '<br><span class="muted small">' + esc(topicOf(x.q.topic).label) + '</span></td><td>' + shownRaw(x.p, x.rec) + '</td><td>' + M(esc(fmtExp(x.p))) + '</td><td><span class="pill ' + st + '">' + st + '</span>' + (rv ? '<br><span class="small muted">you set this</span>' : '') + '</td><td>' + sureL + '</td>' +
+          '<td class="ov" data-id="' + x.id + '"><button data-o="right" aria-pressed="' + (rv === 'right') + '">Right</button><button data-o="wrong" aria-pressed="' + (rv === 'wrong') + '">Wrong</button><button data-o="" aria-label="Clear">×</button></td></tr>'; }).join('') + '</table><p class="small muted">The page marks numbers strictly and anything algebraic leniently: "to check" means it could not tell. Her working on paper matters more than the final line.</p></div></details>';
+    });
+
+    h += '<details><summary>Import results sent as a code</summary><div class="card"><p class="small muted">If Masal could not save from her phone, she can send a code instead. Paste it here.</p><textarea id="imp" class="code"></textarea><div class="row"><button class="btn" id="doImp">Import</button><span class="small" id="impMsg">' + esc(S.importMsg) + '</span></div></div></details>';
+    app.innerHTML = h;
+    $$('.ov button').forEach(function (b) { b.onclick = function () {
+      var id = b.parentNode.getAttribute('data-id'), o = b.getAttribute('data-o');
+      if (!S.db) return;
+      chain = chain.then(function () { var d = S.db.collection('reviews').doc(id); return o ? d.set({ st: o, at: new Date().toISOString() }) : d.delete(); }).catch(function () {});
+    }; });
+    $('#doImp').onclick = function () {
+      try {
+        var j = JSON.parse(decodeURIComponent(escape(atob($('#imp').value.trim())))); if (!j || !j.a) throw 0;
+        var n = 0; if (!S.db) { S.importMsg = 'Saving is not connected here.'; return viewParent(); }
+        Object.keys(j.a).forEach(function (k) { n++; (function (k) { chain = chain.then(function () { return S.db.collection('answers').doc(k).set(Object.assign({}, j.a[k], { imported: true })); }).catch(function () {}); })(k); });
+        Object.keys(j.c || {}).forEach(function (k) { chain = chain.then(function () { return S.db.collection('confidence').doc(k).set(j.c[k]); }).catch(function () {}); });
+        if (j.p && Object.keys(j.p).length) chain = chain.then(function () { return S.db.collection('profile').doc('main').set(j.p); }).catch(function () {});
+        S.importMsg = 'Importing ' + n + ' answers…';
+      } catch (e) { S.importMsg = 'That did not look like a results code.'; }
+      viewParent();
+    };
+  }
+
+  /* ---------- start up ---------- */
+  function subscribe(coll, key) {
+    S.db.collection(coll).onSnapshot(function (snap) {
+      var o = {}; snap.docs.forEach(function (d) { o[d.id] = d.data(); });
+      if (coll === 'profile') S[key] = o.main || {}; else S[key] = o;
+      softRender();
+    }, function () { /* a dead listener: the page keeps working from local state */ });
+  }
+  function start() {
+    loadLocal(); render();
+    var cl = window.claude;
+    if (!cl || !cl.use) { S.auto = /^https?:/.test(location.protocol); S.ready = true; render(); return; }
+    cl.use('user').then(function (u) {
+      if (!u) return;
+      return Promise.all([u.isOwner(), u.canEdit(), u.can('data.write')]).then(function (v) { S.isOwner = !!v[0]; S.canEdit = !!v[1]; S.canWrite = v[2]; S.preview = S.isOwner || S.canEdit; });
+    }).catch(function () {}).then(function () { return cl.use('db'); }).then(function (db) {
+      S.ready = true;
+      if (db) { S.db = db; subscribe('answers', 'dbAnswers'); subscribe('confidence', 'dbConf'); subscribe('profile', 'dbProfile'); subscribe('reviews', 'dbReviews'); }
+      render();
+    }).catch(function () { S.ready = true; render(); });
+  }
+  start();
+})();
+</script>
