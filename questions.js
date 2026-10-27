@@ -74,7 +74,7 @@ var ROUNDS = [
     { id: 'q26', topic: 'negfrac', hard: true, stem: 'Work these out.', parts: [
       { id: 'a', label: '27^{2/3}', kind: 'num', exp: 9 }, { id: 'b', label: '({9//16})^{−1/2}', kind: 'num', exp: 4 / 3, hint: 'a fraction like 3/4' }] },
     { id: 'q27', topic: 'stdform', hard: true, stem: 'Give both answers in <b>standard form</b>.', parts: [
-      { id: 'a', label: 'a) 0.00046', kind: 'sf', exp: 0.00046, hint: 'type like 3.2 x 10^5' },
+      { id: 'a', label: 'a) 0.00046', kind: 'sf', exp: 0.00046, hint: 'Use the buttons: ×10^ then the power. If the power is negative, tap − after it.' },
       { id: 'b', label: 'b) (3 × 10^{5}) × (4 × 10^{−2})', kind: 'sf', exp: 12000 }] }
   ] },
   { id: 'd', title: 'Round D', sub: 'Shape and measures', mins: 10, qs: [

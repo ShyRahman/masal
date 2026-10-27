@@ -13,13 +13,17 @@ for i in issues:
     except Exception: continue                       # not one of ours (or tampered): ignore
     log.append((d['when'], d['kind'])); A.update(d.get('a', {})); C.update(d.get('c', {})); P.update(d.get('p', {}).get('main', d.get('p', {})))
 if '--raw' in sys.argv: print(json.dumps({'a': A, 'c': C, 'p': P}, indent=1)); sys.exit()
-SURE = {3: 'pretty sure', 2: 'not sure', 1: 'guessing', 0: "don't know"}
+SURE = {3: 'pretty sure', 2: 'not sure', 1: 'guessing'}   # 0 with an answer = she did not tap how sure; 0 with no answer = skipped
 kinds = {k: sum(1 for _, x in log if x == k) for k in ('topics', 'progress', 'finish')}
 print(f'{len(log)} submissions (' + ', '.join(f'{n} {k}' for k, n in kinds.items() if n) + ')' + (f', latest {max(w for w, _ in log)}' if log else '') + f'; {len(A)} answers, {len(C)} topics rated' + ('; FINISHED' if kinds['finish'] else '; not finished yet' if log else ''))
 if P: print('Feeling:', P.get('feeling'), '| Hardest:', P.get('hardest'))
+from fractions import Fraction
 def exp(p):
     k = p['kind']
-    return {'mc': lambda: p['options'][p['correct']], 'alg': lambda: p['variants'][0], 'prime': lambda: p['exp'], 'sf': lambda: p['exp'], 'num': lambda: p['exp']}.get(k, lambda: '')()
+    if k == 'num':
+        f = Fraction(p['exp']).limit_denominator(64)
+        return str(f) if abs(float(f) - p['exp']) < 1e-9 else str(round(p['exp'], 4))
+    return {'mc': lambda: p['options'][p['correct']], 'alg': lambda: p['variants'][0], 'prime': lambda: p['exp'], 'sf': lambda: p['exp']}.get(k, lambda: '')()
 print('\nWhat she says vs what she did')
 for t in [t for t in bank['T'] if t.get('core')]:
     mine = [(k, A[k]) for k in A if k in parts and parts[k][0]['topic'] == t['id']]
@@ -27,6 +31,6 @@ for t in [t for t in bank['T'] if t.get('core')]:
     print(f"  {t['label']:<38} says {C.get(t['id'], {}).get('level', '-'):<7} -> " + (', '.join(f'{n} {s}' for s, n in res.items() if n) or 'no answers'))
 print('\nAnswers (id | her answer | expected | mark | how sure)')
 for k, r in sorted(A.items()):
-    if k in parts: print(f"  {k:<6} | {r.get('raw') or '(blank)'!s:<22} | {exp(parts[k][1])!s:<16} | {r['st']:<6} | {SURE.get(r.get('sure'), '')}")
+    if k in parts: print(f"  {k:<6} | {r.get('raw') or '(blank)'!s:<22} | {exp(parts[k][1])!s:<16} | {r['st']:<6} | {SURE.get(r.get('sure')) or ('skipped' if r['st'] == 'skip' else 'not stated')}")
 sw = [k for k, r in A.items() if r.get('sure') == 3 and r['st'] == 'wrong']
 print('\nPretty sure but wrong:', ', '.join(sw) or 'none')

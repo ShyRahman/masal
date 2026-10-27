@@ -59,7 +59,8 @@ textarea { min-height: 84px; resize: vertical; }
 .part { display: flex; flex-direction: column; gap: 4px; }
 .part .lab { font-size: 1.05rem; }
 .keys { display: flex; gap: 6px; flex-wrap: wrap; }
-.keys button { min-width: 44px; min-height: 44px; font: 400 1.15rem var(--font-body); border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 6px; cursor: pointer; }
+.keys button { min-width: 52px; min-height: 52px; padding: 2px 8px; font: 400 1.25rem var(--font-body); border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 6px; cursor: pointer; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+.keys button small { font-size: .68rem; color: var(--muted); }
 .mcopt { display: flex; gap: 10px; align-items: center; min-height: 48px; border: 2px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--card); cursor: pointer; }
 .mcopt:has(input:checked) { border-color: var(--pen); background: var(--pen-soft); }
 .calc { background: var(--grey-soft); border-radius: 4px; padding: 1px 6px; font-size: .85rem; }
@@ -272,7 +273,7 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
       '<div class="bar"><i style="width:' + pct + '%"></i></div>' + savingBanner() +
       '<div class="card"><div class="stem">' + M(q.stem) + '</div>' + (q.hard ? '<div class="hard">★ Higher-tier content. Skipping is completely fine.</div>' : '') +
       q.parts.map(function (p) { return partHtml(q, p, A[q.id + p.id]); }).join('') +
-      '<div class="keys" id="keys" aria-label="Maths symbols">' + ['−', '/', '^', '(', ')', 'π', '×'].map(function (k) { return '<button type="button" data-k="' + k + '" tabindex="-1">' + k + '</button>'; }).join('') + '</div>' +
+      '<div class="keys" id="keys" aria-label="Maths symbols">' + keysFor(q).map(function (k) { return '<button type="button" data-k="' + esc(k[0]) + '" tabindex="-1" aria-label="' + esc(k[1]) + '"><span>' + esc(k[2] || k[0]) + '</span><small>' + esc(k[1]) + '</small></button>'; }).join('') + '</div>' +
       '<div class="f" style="margin-top:4px">How sure are you?</div><div class="chips3">' + SURE.map(function (s) {
         var rec = A[q.id + q.parts[0].id], on = rec && rec.sure === s[0]; return '<button class="chip" data-s="' + s[0] + '" aria-pressed="' + !!on + '">' + s[1] + '</button>'; }).join('') + '</div></div>' +
       '<div class="row spread"><button class="btn quiet" id="back"' + (i2 === 0 ? ' disabled' : '') + '>Back</button><button class="btn quiet" id="skip">I don\'t know yet</button><button class="btn primary" id="next">Next</button></div>';
@@ -305,6 +306,14 @@ details summary { cursor: pointer; font-family: var(--font-hand); font-size: 1.2
     $('#next').onclick = function () { advance(false); };
     $('#skip').onclick = function () { advance(true); };
     $('#back').onclick = function () { S.qi[rid] = Math.max(0, i2 - 1); render(); window.scrollTo(0, 0); };
+  }
+  // On-screen symbol keys, chosen by what the question needs (a phone keyboard hides ^, ² and the minus sign).
+  function keysFor(q) {
+    var kinds = q.parts.map(function (p) { return p.kind; }), has = function (k) { return kinds.indexOf(k) >= 0; };
+    var K = { x: ['x', 'letter x'], pow: ['^', 'power'], sq: ['²', 'squared'], cube: ['³', 'cubed'], minus: ['−', 'minus'], div: ['/', 'fraction'], lp: ['(', 'bracket'], rp: [')', 'bracket'], std: ['×10^', 'times ten to the', '×10^'], pi: ['π', 'pi'], times: ['×', 'times'] };
+    var list = has('sf') ? ['std', 'pow', 'minus'] : has('alg') ? ['x', 'pow', 'sq', 'cube', 'minus', 'div', 'lp', 'rp'] : has('prime') ? ['times', 'pow'] : ['minus', 'div'];
+    if (q.topic === 'circles') list.push('pi');
+    return list.map(function (id) { return K[id]; });
   }
   function partHtml(q, p, rec) {
     var id = q.id + p.id, val = rec && !rec.skipped ? rec.raw : '';

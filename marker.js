@@ -66,6 +66,8 @@ function strip(s) { return clean(s).replace(/\s+/g, '').replace(/^[a-z]=/, ''); 
 
 function markAlg(raw, variants) {
   if (!String(raw == null ? '' : raw).trim()) return 'skip';
+  // the on-screen × key can be tapped for the letter x: read it as x when the answer has no x and the expected answer does
+  if (/×/.test(raw) && !/x/i.test(raw) && variants.some(function (v) { return /x/.test(v); })) raw = String(raw).replace(/×/g, 'x');
   var c = canonPoly(raw), t = strip(raw);
   for (var i = 0; i < variants.length; i++) {
     if (c !== null && canonPoly(variants[i]) === c) return 'right';

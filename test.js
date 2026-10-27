@@ -22,7 +22,9 @@ ok('q13','a',['4x+5','5+4x']); ok('q14','a',['x^2+2x-15','x²+2x−15','-15+2x+x
 t('q15 wrong gives check', M.markPart(part('q15','a'), '3y^2+7y-20'), 'check');
 ok('q16','a',['6','x=6','x = 6']); no('q16','a',['-6','5']); ok('q17','a',['11']);
 ok('q18','a',['(5-f)/2','g=(5-f)/2','5/2 - f/2','(f-5)/-2']); no('q18','a',['(f+5)/-2'],'check');
-ok('q19','a',['3x(2x-3)','3x(2x−3)','(2x-3)3x']); no('q19','a',['3(2x^2-3x)'],'check');
+ok('q19','a',['3x(2x-3)','3x(2x−3)','(2x-3)3x']); ok('q19','a',['3×(2×−3)']);   // the × key used as the letter x
+t('q13 with × for x is read, not skipped or crashed', M.markPart(part('q13','a'), '−12×²+ 52× −24'), 'check');
+t('q14 x² typed with the × key', M.markPart(part('q14','a'), '×²+2×−15'), 'right'); no('q19','a',['3(2x^2-3x)'],'check');
 ok('q20','a',['(x+3)(x+4)','(x+4)(x+3)','(x + 3)(x + 4)']);
 ok('q21','a',['4n+3','n=4n+3'.replace('n=','')]); no('q21','a',['4n-1'],'check');
 t('q22 mc right', M.markPart(part('q22','a'), 1), 'right'); t('q22 mc wrong', M.markPart(part('q22','a'), 0), 'wrong');
